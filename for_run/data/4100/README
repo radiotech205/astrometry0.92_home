@@ -1,0 +1,19 @@
+Tycho-2 index files
+-------------------
+
+Triangle for scales 11-19.
+
+for ((i=11; i<20; i++));
+  do build-index -d 3 -o index-41${i}.fits -P $i -S mag -B 0.1 -s 0 -r 1 -I 41${i} -M -i /data1/catalogs-fits/TYCHO-2/tycho2-cut.fits;
+done > log
+
+Quads for scales 7-10.
+
+i=10; build-index -d 4 -o index-41${i}.fits -P $i -S mag -B 0.1 -s 0 -r 1 -I 41${i} -M -i /data1/catalogs-fits/TYCHO-2/tycho2-cut.fits | tee log10
+i=9; build-index -d 4 -o index-410${i}.fits -P $i -S mag -B 0.1 -s 0 -r 1 -I 410${i} -M -i /data1/catalogs-fits/TYCHO-2/tycho2-cut.fits | tee log9
+i=8; build-index -d 4 -o index-410${i}.fits -P $i -S mag -B 0.1 -s 0 -r 1 -I 410${i} -M -i /data1/catalogs-fits/TYCHO-2/tycho2-cut.fits | tee log8
+i=7; build-index -d 4 -o index-410${i}.fits -P $i -S mag -B 0.1 -s 0 -r 1 -I 410${i} -M -i /data1/catalogs-fits/TYCHO-2/tycho2-cut.fits | tee log7
+
+Scale 9 pretty much fills up 10 sweeps of stars.
+Scale 8 starts with 145k stars per sweep and ends with ~100k.  (32 arcmin healpixes)
+Scale 7 starts with 290k and ends with 95k. (22 arcmin healpixes)

@@ -1,0 +1,5 @@
+int main_engine(int argc, char** args) 
+-c etc/astrometry.cfg  -f examples.txt 
+
+int main_verify(int argc, char** args)
+-w verify/apod4.wcs -x verify/apod4.axy -r verify/apod4.rdls
