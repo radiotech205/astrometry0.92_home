@@ -90,13 +90,13 @@ static void close_datalogfid() {
         }
     }
 }
-//#include "memory.h"
+#include "memory.h"
 
 int main/*_engine*/(int argc, char** args) {
     char* default_configfn = "astrometry.cfg";
     char* default_config_path = "../etc";
 
-    //init_memory(INIT_MEM_SIZE);
+    init_memory(INIT_MEM_SIZE);
 
     int c;
     char* configfn = NULL;
@@ -160,7 +160,7 @@ int main/*_engine*/(int argc, char** args) {
             cancelfn = optarg;
             break;
         case 'c':
-            configfn = strdup(optarg);
+            configfn = smart_strdup(optarg);
             break;
         case '?':
             break;
@@ -215,9 +215,10 @@ int main/*_engine*/(int argc, char** args) {
     // directory containing the 'engine' executable:
     me = find_executable(args[0], NULL);
     if (!me)
-        me = strdup(args[0]);
-    mydir = sl_append(strings, dirname(me));
-    free(me);
+        me = smart_strdup(args[0]);
+    char* dir_part = dirname(me);
+    mydir = sl_append(strings, smart_strdup(dir_part));
+    smart_free(me);
 
     // Read config file
     if (!configfn) {
@@ -234,7 +235,7 @@ int main/*_engine*/(int argc, char** args) {
         for (i=0; i<sl_size(trycf); i++) {
             char* cf = sl_get(trycf, i);
             if (file_exists(cf)) {
-                configfn = strdup(cf);
+                configfn = smart_strdup(cf);
                 logverb("Using config file \"%s\"\n", cf);
                 break;
             } else {
@@ -244,7 +245,7 @@ int main/*_engine*/(int argc, char** args) {
         if (!configfn) {
             char* cflist = sl_join(trycf, "\n  ");
             logerr("Couldn't find config file: tried:\n  %s\n", cflist);
-            free(cflist);
+            smart_free(cflist);
         }
         sl_free2(trycf);
     }
@@ -291,7 +292,7 @@ int main/*_engine*/(int argc, char** args) {
         exit(-1);
     }
 
-    free(configfn);
+    smart_free(configfn);
 
     if (!il_size(engine->default_depths)) {
         parse_depth_string(engine->default_depths,

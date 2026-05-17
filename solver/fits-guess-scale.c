@@ -75,7 +75,7 @@ void fits_guess_scale_hdr(const qfits_header* hdr,
     }
     errstr = errors_stop_logging_to_string("\n  ");
     logverb("fits-guess-scale: failed to read SIP/TAN header:\n  %s\n", errstr);
-    free(errstr);
+    smart_free(errstr);
 
     if (!gotsip) {
         // it might have a correct CD matrix but be missing other parts (eg CRVAL)

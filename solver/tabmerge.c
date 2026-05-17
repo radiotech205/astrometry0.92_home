@@ -15,7 +15,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "fitsio.h"
-
+#include "memory.h"
 int main_tabmerge(int argc, char *argv[])
 {
     fitsfile *infptr, *outfptr;  /* FITS file pointers */
@@ -76,7 +76,7 @@ int main_tabmerge(int argc, char *argv[])
     else if ( fits_read_key(infptr, TLONG, "NAXIS1", &width, NULL, &status) )
         printf("Couldn't get width of input table\n");
 
-    else if (!(buffer = (unsigned char *) malloc(width)) )
+    else if (!(buffer = (unsigned char *) smart_malloc(width)) )
         printf("memory allocation error\n");
 
     else if ( fits_get_num_rows(infptr,  &inrows,  &status) ||
@@ -114,7 +114,7 @@ int main_tabmerge(int argc, char *argv[])
     }
 
     if (buffer)
-        free(buffer);
+        smart_free(buffer);
 
     if (status) fits_report_error(stderr, status); /* print any error message */
     return(status);

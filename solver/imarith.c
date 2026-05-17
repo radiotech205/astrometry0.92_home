@@ -17,7 +17,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "fitsio.h"
-
+#include "memory.h"
 int main_imarith(int argc, char *argv[])
 {
     fitsfile *afptr, *bfptr, *outfptr;  /* FITS file pointers */
@@ -85,8 +85,8 @@ int main_imarith(int argc, char *argv[])
 
             npixels = anaxes[0];  /* no. of pixels to read in each row */
 
-            apix = (double *) malloc(npixels * sizeof(double)); /* mem for 1 row */
-            bpix = (double *) malloc(npixels * sizeof(double)); 
+            apix = (double *) smart_malloc(npixels * sizeof(double)); /* mem for 1 row */
+            bpix = (double *) smart_malloc(npixels * sizeof(double));
 
             if (apix == NULL || bpix == NULL) {
                 printf("Memory allocation error\n");
@@ -137,8 +137,8 @@ int main_imarith(int argc, char *argv[])
                 }    /* end of loop over planes */
 
             fits_close_file(outfptr, &status);
-            free(apix);
-            free(bpix);
+            smart_free(apix);
+            smart_free(bpix);
         }
 
     fits_close_file(afptr, &status);

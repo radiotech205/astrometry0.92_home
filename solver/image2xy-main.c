@@ -150,7 +150,7 @@ int main_image2xy(int argc, char *argv[]) {
             overwrite = 1;
             break;
         case 'o':
-            outfn = strdup(optarg);
+            outfn = smart_strdup(optarg);
             break;
         case '?':
         case 'h':
@@ -191,6 +191,6 @@ int main_image2xy(int argc, char *argv[]) {
         ERROR("image2xy failed.");
         exit(-1);
     }
-    free(outfn);
+    smart_free(outfn);
     return 0;
 }

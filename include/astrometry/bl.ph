@@ -4,7 +4,7 @@
 */
 
 /// Private header file shared between bl.inc and bl.c
-
+#include "memory.h"
 InlineDeclare
 bl_node* find_node(const bl* list, size_t n, size_t* rtn_nskipped);
 
@@ -14,4 +14,4 @@ bl_node* find_node(const bl* list, size_t n, size_t* rtn_nskipped);
 #define NODE_INTDATA(node) ((int*)(((bl_node*)(node)) + 1))
 #define NODE_DOUBLEDATA(node) ((double*)(((bl_node*)(node)) + 1))
 
-#define bl_free_node free
+#define bl_free_node smart_free

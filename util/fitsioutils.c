@@ -25,14 +25,14 @@
 #include "log.h"
 #include "errors.h"
 #include "mathutil.h"
-
+#include "memory.h"
 Malloc
 char* fits_to_string(const qfits_header* hdr, int* size) {
     int N = qfits_header_n(hdr);
     char* str = NULL;
     int i;
 
-    str = malloc(N * FITS_LINESZ);
+    str = smart_malloc(N * FITS_LINESZ);
     if (!str) {
         SYSERROR("Failed to allocate string for %i FITS lines\n", N);
         return NULL;
@@ -40,7 +40,7 @@ char* fits_to_string(const qfits_header* hdr, int* size) {
     for (i=0; i<N; i++) {
         if (qfits_header_write_line(hdr, i, str + i*FITS_LINESZ)) {
             ERROR("Failed to write FITS header line %i", i);
-            free(str);
+            smart_free(str);
             return NULL;
         }
     }
@@ -73,9 +73,9 @@ int fits_write_header(const qfits_header* hdr, const char* fn) {
 
 qfits_table* fits_copy_table(qfits_table* tbl) {
     qfits_table* out;
-    out = calloc(1, sizeof(qfits_table));
+    out = smart_calloc(1, sizeof(qfits_table));
     memcpy(out, tbl, sizeof(qfits_table));
-    out->col = malloc(tbl->nc * sizeof(qfits_col));
+    out->col = smart_malloc(tbl->nc * sizeof(qfits_col));
     memcpy(out->col, tbl->col, tbl->nc * sizeof(qfits_col));
     return out;
 }
@@ -389,7 +389,7 @@ void fits_header_addf_longstring(qfits_header* hdr, const char* key,
     int commentlen;
     
     va_start(lst, format);
-    nb = vasprintf(&str, format, lst);
+    nb = smart_asprintf(&str, format, lst);
     va_end(lst);
     if (nb == -1) {
         SYSERROR("vasprintf failed.");
@@ -477,7 +477,7 @@ void fits_header_addf_longstring(qfits_header* hdr, const char* key,
             len -= maxlen;
         }
     }
-    free(str);
+    smart_free(str);
 }
 
 // modifies s in-place.
@@ -581,7 +581,7 @@ char* fits_get_long_string(const qfits_header* hdr, const char* thekey) {
         qfits_pretty_string_r(val, str);
         len = strlen(str);
         if (len < 1 || str[len-1] != '&')
-            return strdup(str);
+            return smart_strdup(str);
         slist = sl_new(4);
         sl_append(slist, str);
         for (j=i+1; j<N; j++) {
@@ -688,7 +688,7 @@ static int add_long_line(qfits_header* hdr, const char* keyword, const char* ind
     char* str = NULL;
     int len;
     int indlen = (indent ? strlen(indent) : 0);
-    len = vasprintf(&origstr, format, lst);
+    len = smart_asprintf(&origstr, format, lst);
     if (len == -1) {
         fprintf(stderr, "vasprintf failed: %s\n", strerror(errno));
         return -1;
@@ -717,7 +717,7 @@ static int add_long_line(qfits_header* hdr, const char* keyword, const char* ind
         len -= nchars;
         str += nchars;
     } while (len > 0);
-    free(origstr);
+    smart_free(origstr);
     return 0;
 }
 
@@ -776,7 +776,7 @@ int fits_add_args(qfits_header* hdr, char** args, int argc) {
     ss = sl_join(s, " ");
     sl_free_nonrecursive(s);
     i = add_long_line_b(hdr, "HISTORY", "  ", "%s", ss);
-    free(ss);
+    smart_free(ss);
     return i;
 }
 

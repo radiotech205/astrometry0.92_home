@@ -21,6 +21,13 @@ LIBS += -ldl
 QMAKE_LFLAGS += -rdynamic
 QMAKE_LFLAGS += -Wl,--start-group -ldl -Wl,--end-group
 
+# Добавляем санитайзер для отладочной сборки
+CONFIG(debug, debug|release) {
+    QMAKE_CFLAGS += -fsanitize=address -g
+    QMAKE_CXXFLAGS += -fsanitize=address -g
+    QMAKE_LFLAGS += -fsanitize=address
+}
+
 SOURCES += \
     gsl-an/blas/blas.c \
     gsl-an/block/block.c \

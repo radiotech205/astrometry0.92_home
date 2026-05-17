@@ -18,7 +18,7 @@
 #include "ioutils.h"
 #include "anqfits.h"
 #include "mathutil.h"
-
+#include "memory.h"
 sip_t* sip_from_string(const char* str, int slen, sip_t* dest) {
     qfits_header* hdr;
     sip_t* rtn;
@@ -45,7 +45,7 @@ sip_t* sip_read_tan_or_sip_header_file_ext(const char* wcsfn, int ext, sip_t* de
             return NULL;
         }
         if (!dest)
-            dest = malloc(sizeof(sip_t));
+            dest = smart_malloc(sizeof(sip_t));
         memcpy(dest, &sip, sizeof(sip_t));
         return dest;
     } else {
@@ -166,7 +166,7 @@ int sip_get_image_size(const qfits_header* hdr, int* pW, int* pH) {
         //printf("XTENSION: '%s'\n", str);
         // qfits_header_getstr turns the string double-quotes to single-quotes
         eq = streq(str, "BINTABLE");
-        free(str);
+        smart_free(str);
         if (eq) {
             // ZNAXIS1 =                 2046 / length of data axis 1
             // ZNAXIS2 =                 4094 / length of data axis 2
@@ -420,7 +420,7 @@ sip_t* sip_read_header(const qfits_header* hdr, sip_t* dest) {
 
  gohome:
     if (!dest)
-        dest = malloc(sizeof(sip_t));
+        dest = smart_malloc(sizeof(sip_t));
 
     memcpy(dest, &sip, sizeof(sip_t));
     return dest;
@@ -473,8 +473,8 @@ tan_t* tan_read_header(const qfits_header* hdr, tan_t* dest) {
               "got CTYPE1 = \"%s\", CYTPE2 = \"%s\"\n",
               ct1, ct2);
     }
-    free(ct1);
-    free(ct2);
+    smart_free(ct1);
+    smart_free(ct2);
     if (swap == -1)
         return NULL;
 
@@ -515,14 +515,14 @@ tan_t* tan_read_header(const qfits_header* hdr, tan_t* dest) {
             cdelt1 = qfits_header_getdouble(hdr, key, nil);
             if (cdelt1 == nil) {
                 ERROR("%s; also tried but didn't find \"%s\"", complaint, key);
-                free(complaint);
+                smart_free(complaint);
                 return NULL;
             }
             key = "CDELT2";
             cdelt2 = qfits_header_getdouble(hdr, key, nil);
             if (cdelt2 == nil) {
                 ERROR("%s; also tried but didn't find \"%s\"", complaint, key);
-                free(complaint);
+                smart_free(complaint);
                 return NULL;
             }
             // Try PCi_j
@@ -556,7 +556,7 @@ tan_t* tan_read_header(const qfits_header* hdr, tan_t* dest) {
     tan.sin = is_sin;
 
     if (!dest)
-        dest = malloc(sizeof(tan_t));
+        dest = smart_malloc(sizeof(tan_t));
     memcpy(dest, &tan, sizeof(tan_t));
     return dest;
 }

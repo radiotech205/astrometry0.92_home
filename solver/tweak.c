@@ -22,7 +22,7 @@
 #include "gslutils.h"
 #include "errors.h"
 #include "fit-wcs.h"
-
+#include "memory.h"
 // TODO:
 //
 //  1. Write the document which explains every step of tweak in detail with
@@ -112,10 +112,10 @@ static void get_shift(double* ximg, double* yimg, int nimg,
                       double* xshift, double* yshift) {
     int i, j;
     int themax, themaxind, ys, xs;
-
     // hough transform
     int hsz = 1000; // hough histogram size (per side)
-    int *hough = calloc(hsz * hsz, sizeof(int)); // allocate bins
+    int *hough = smart_calloc(hsz * hsz, sizeof(int)); // allocate bins
+    if(!hough)  return;
     int kern[] = {0, 2, 3, 2, 0,  // approximate gaussian smoother
                   2, 7, 12, 7, 2,       // should be KERNEL_SIZE x KERNEL_SIZE
                   3, 12, 20, 12, 3,
@@ -163,7 +163,7 @@ static void get_shift(double* ximg, double* yimg, int nimg,
     debug("get_shift: mindx=%g, maxdx=%g, mindy=%g, maxdy=%g\n", mindx, maxdx, mindy, maxdy);
     debug("get_shift: xs=%g, ys=%g\n", *xshift, *yshift);
 
-    free(hough);
+    smart_free(hough);
 }
 
 static sip_t* do_entire_shift_operation(tweak_t* t, double rho) {
@@ -183,7 +183,8 @@ void tweak_init(tweak_t* t) {
 }
 
 tweak_t* tweak_new() {
-    tweak_t* t = malloc(sizeof(tweak_t));
+    tweak_t* t = smart_malloc(sizeof(tweak_t));
+    if(!t)  return NULL;
     tweak_init(t);
     return t;
 }
@@ -275,10 +276,10 @@ void tweak_clear_on_sip_change(tweak_t* t) {
 void tweak_clear_ref_xy(tweak_t* t) {
     if (t->state & TWEAK_HAS_REF_XY) {
         //assert(t->x_ref);
-        free(t->x_ref);
+        smart_free(t->x_ref);
         //assert(t->y_ref);
         t->x_ref = NULL;
-        free(t->y_ref);
+        smart_free(t->y_ref);
         t->y_ref = NULL;
         t->state &= ~TWEAK_HAS_REF_XY;
     }
@@ -290,10 +291,10 @@ void tweak_clear_ref_xy(tweak_t* t) {
 void tweak_clear_ref_ad(tweak_t* t) {
     if (t->state & TWEAK_HAS_REF_AD) {
         assert(t->a_ref);
-        free(t->a_ref);
+        smart_free(t->a_ref);
         t->a_ref = NULL;
         assert(t->d_ref);
-        free(t->d_ref);
+        smart_free(t->d_ref);
         t->d_ref = NULL;
         t->n_ref = 0;
         tweak_clear_correspondences(t);
@@ -308,10 +309,10 @@ void tweak_clear_ref_ad(tweak_t* t) {
 void tweak_clear_image_ad(tweak_t* t) {
     if (t->state & TWEAK_HAS_IMAGE_AD) {
         assert(t->a);
-        free(t->a);
+        smart_free(t->a);
         t->a = NULL;
         assert(t->d);
-        free(t->d);
+        smart_free(t->d);
         t->d = NULL;
         t->state &= ~TWEAK_HAS_IMAGE_AD;
     }
@@ -322,7 +323,7 @@ void tweak_clear_image_ad(tweak_t* t) {
 void tweak_clear_image_xyz(tweak_t* t) {
     if (t->state & TWEAK_HAS_IMAGE_XYZ) {
         assert(t->xyz);
-        free(t->xyz);
+        smart_free(t->xyz);
         t->xyz = NULL;
         t->state &= ~TWEAK_HAS_IMAGE_XYZ;
     }
@@ -332,10 +333,10 @@ void tweak_clear_image_xyz(tweak_t* t) {
 void tweak_clear_image_xy(tweak_t* t) {
     if (t->state & TWEAK_HAS_IMAGE_XY) {
         assert(t->x);
-        free(t->x);
+        smart_free(t->x);
         t->x = NULL;
         assert(t->y);
-        free(t->y);
+        smart_free(t->y);
         t->y = NULL;
         t->state &= ~TWEAK_HAS_IMAGE_XY;
     }
@@ -351,8 +352,10 @@ void tweak_push_ref_ad(tweak_t* t, const double* a, const double *d, int n) {
     tweak_clear_ref_ad(t);
     assert(!t->a_ref);
     assert(!t->d_ref);
-    t->a_ref = malloc(sizeof(double) * n);
-    t->d_ref = malloc(sizeof(double) * n);
+    t->a_ref = smart_malloc(sizeof(double) * n);
+    if(!t->a_ref)   return;
+    t->d_ref = smart_malloc(sizeof(double) * n);
+    if(!t->d_ref)   return;
     memcpy(t->a_ref, a, n*sizeof(double));
     memcpy(t->d_ref, d, n*sizeof(double));
     t->n_ref = n;
@@ -366,8 +369,10 @@ void tweak_push_ref_ad_array(tweak_t* t, const double* ad, int n) {
     tweak_clear_ref_ad(t);
     assert(!t->a_ref);
     assert(!t->d_ref);
-    t->a_ref = malloc(sizeof(double) * n);
-    t->d_ref = malloc(sizeof(double) * n);
+    t->a_ref = smart_malloc(sizeof(double) * n);
+    if(!t->a_ref)   return;
+    t->d_ref = smart_malloc(sizeof(double) * n);
+    if(!t->d_ref)   return;
     for (i=0; i<n; i++) {
         t->a_ref[i] = ad[2*i + 0];
         t->d_ref[i] = ad[2*i + 1];
@@ -380,7 +385,8 @@ static void ref_xyz_from_ad(tweak_t* t) {
     int i;
     assert(t->state & TWEAK_HAS_REF_AD);
     assert(!t->xyz_ref);
-    t->xyz_ref = malloc(sizeof(double) * 3 * t->n_ref);
+    t->xyz_ref = smart_malloc(sizeof(double) * 3 * t->n_ref);
+    if(!t->xyz_ref) return;
     assert(t->xyz_ref);
     for (i = 0; i < t->n_ref; i++)
         radecdeg2xyzarr(t->a_ref[i], t->d_ref[i], t->xyz_ref + 3 * i);
@@ -393,8 +399,8 @@ static void ref_ad_from_xyz(tweak_t* t) {
     assert(!t->a_ref);
     assert(!t->d_ref);
     n = t->n_ref;
-    t->a_ref = malloc(sizeof(double) * n);
-    t->d_ref = malloc(sizeof(double) * n);
+    t->a_ref = smart_malloc(sizeof(double) * n);
+    t->d_ref = smart_malloc(sizeof(double) * n);
     assert(t->a_ref);
     assert(t->d_ref);
     for (i=0; i<n; i++)
@@ -408,7 +414,7 @@ void tweak_push_ref_xyz(tweak_t* t, const double* xyz, int n) {
     assert(n);
     tweak_clear_ref_ad(t);
     assert(!t->xyz_ref);
-    t->xyz_ref = malloc(sizeof(double) * 3 * n);
+    t->xyz_ref = smart_malloc(sizeof(double) * 3 * n);
     assert(t->xyz_ref);
     memcpy(t->xyz_ref, xyz, 3*n*sizeof(double));
     t->n_ref = n;
@@ -453,9 +459,9 @@ void tweak_push_correspondence_indices(tweak_t* t, il* image, il* ref, dl* dists
 // The jitter is in radians
 static void find_correspondences(tweak_t* t, double jitter) {
     double dist;
-    double* data_image = malloc(sizeof(double) * t->n * 3);
-    double* data_ref = malloc(sizeof(double) * t->n_ref * 3);
-
+    double* data_image = smart_malloc(sizeof(double) * t->n * 3);
+    double* data_ref = smart_malloc(sizeof(double) * t->n_ref * 3);
+    if(!data_image || !data_ref)    return;
     assert(t->state & TWEAK_HAS_IMAGE_XYZ);
     assert(t->state & TWEAK_HAS_REF_XYZ);
     tweak_clear_correspondences(t);
@@ -490,8 +496,8 @@ static void find_correspondences(tweak_t* t, double jitter) {
     kdtree_free(t->kd_ref);
     t->kd_image = NULL;
     t->kd_ref = NULL;
-    free(data_image);
-    free(data_ref);
+    smart_free(data_image);
+    smart_free(data_ref);
 
     logverb("Number of correspondences: %zu\n", il_size(t->image));
 }
@@ -585,14 +591,15 @@ static void do_sip_tweak(tweak_t* t) {
     if (t->weighted_fit)
         logverb("Weighted RMS error of correspondences: %g arcsec\n",
                 correspondences_rms_arcsec(t, 1));
-
     M = il_size(t->image);
-    double* starxyz = malloc(M * 3 * sizeof(double));
-    double* fieldxy = malloc(M * 2 * sizeof(double));
+    double* starxyz = smart_malloc(M * 3 * sizeof(double));
+    double* fieldxy = smart_malloc(M * 2 * sizeof(double));
+    if(!starxyz || !fieldxy)    return;
     double* weights = NULL;
-    if (t->weighted_fit)
-        weights = malloc(M * sizeof(double));
-        
+    if (t->weighted_fit) {
+        weights = smart_malloc(M * sizeof(double));
+        if(!weights)    return;
+    }
     int result;
     for (i=0; i<M; i++) {
         int refi;
@@ -610,9 +617,9 @@ static void do_sip_tweak(tweak_t* t) {
     result = fit_sip_wcs(starxyz, fieldxy, weights, M,
                          &(t->sip->wcstan), t->sip->a_order, t->sip->ap_order, doshift,
                          &sipout);
-    free(starxyz);
-    free(fieldxy);
-    free(weights);
+    smart_free(starxyz);
+    smart_free(fieldxy);
+    smart_free(weights);
     if (result) {
         ERROR("fit_sip_wcs failed\n");
         return;
@@ -652,8 +659,9 @@ unsigned int tweak_advance_to(tweak_t* t, unsigned int flag) {
         // Convert to ra dec
         assert(!t->a);
         assert(!t->d);
-        t->a = malloc(sizeof(double) * t->n);
-        t->d = malloc(sizeof(double) * t->n);
+        t->a = smart_malloc(sizeof(double) * t->n);
+        t->d = smart_malloc(sizeof(double) * t->n);
+        if(!t->a || t->d)   return 0;
         for (jj = 0; jj < t->n; jj++)
             sip_pixelxy2radec(t->sip, t->x[jj], t->y[jj], t->a + jj, t->d + jj);
         done(TWEAK_HAS_IMAGE_AD);
@@ -687,8 +695,9 @@ unsigned int tweak_advance_to(tweak_t* t, unsigned int flag) {
         assert(t->n_ref);
         assert(!t->x_ref);
         assert(!t->y_ref);
-        t->x_ref = malloc(sizeof(double) * t->n_ref);
-        t->y_ref = malloc(sizeof(double) * t->n_ref);
+        t->x_ref = smart_malloc(sizeof(double) * t->n_ref);
+        t->y_ref = smart_malloc(sizeof(double) * t->n_ref);
+        if(!t->x_ref || t->y_ref)   return 0;
         for (jj = 0; jj < t->n_ref; jj++) {
             Unused anbool ok;
             ok = sip_radec2pixelxy(t->sip, t->a_ref[jj], t->d_ref[jj],
@@ -703,7 +712,8 @@ unsigned int tweak_advance_to(tweak_t* t, unsigned int flag) {
         ensure(TWEAK_HAS_IMAGE_AD);
         debug("Satisfying TWEAK_HAS_IMAGE_XYZ\n");
         assert(!t->xyz);
-        t->xyz = malloc(3 * t->n * sizeof(double));
+        t->xyz = smart_malloc(3 * t->n * sizeof(double));
+        if(!t->xyz) return 0;
         for (i = 0; i < t->n; i++)
             radecdeg2xyzarr(t->a[i], t->d[i], t->xyz + 3*i);
         done(TWEAK_HAS_IMAGE_XYZ);
@@ -783,7 +793,7 @@ void tweak_go_to(tweak_t* t, unsigned int dest_state) {
         tweak_advance_to(t, dest_state);
 }
 
-#define SAFE_FREE(xx) {free((xx)); xx = NULL;}
+#define SAFE_FREE(xx) {smart_free((xx)); xx = NULL;}
 void tweak_clear(tweak_t* t) {
     if (!t)
         return ;
@@ -816,5 +826,5 @@ void tweak_clear(tweak_t* t) {
 
 void tweak_free(tweak_t* t) {
     tweak_clear(t);
-    free(t);
+    smart_free(t);
 }

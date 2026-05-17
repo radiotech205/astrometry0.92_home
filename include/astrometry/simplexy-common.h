@@ -11,9 +11,9 @@
 #define SIMPLEXY_COMMON_H
 
 #include <math.h>
-
+#include "memory.h"
 #define PI M_PI
 
-#define FREEVEC(a) {if((a)!=NULL) free((a)); (a)=NULL;}
+#define FREEVEC(a) {if((a)!=NULL) smart_free((a)); (a)=NULL;}
 
 #endif

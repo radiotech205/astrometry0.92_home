@@ -17,7 +17,7 @@
 #include "mathutil.h"
 #include "errors.h"
 #include "log.h"
-
+#include "memory.h"
 double wcs_pixel_center_for_size(double size) {
     return 0.5 + 0.5 * size;
 }
@@ -278,12 +278,12 @@ int* sip_filter_stars_in_field(const sip_t* sip, const tan_t* tan,
 
     Ngood = 0;
     if (!inds) {
-        inds = malloc(N * sizeof(int));
+        inds = smart_malloc(N * sizeof(int));
         allocd = TRUE;
     }
 
     if (p_xy)
-        xy = malloc(N * 2 * sizeof(double));
+        xy = smart_malloc(N * 2 * sizeof(double));
 
     if (sip) {
         W = sip->wcstan.imagew;
@@ -325,10 +325,10 @@ int* sip_filter_stars_in_field(const sip_t* sip, const tan_t* tan,
     }
 
     if (allocd)
-        inds = realloc(inds, Ngood * sizeof(int));
+        inds = smart_realloc(inds, Ngood * sizeof(int));
 
     if (xy)
-        xy = realloc(xy, Ngood * 2 * sizeof(double));
+        xy = smart_realloc(xy, Ngood * 2 * sizeof(double));
     if (p_xy)
         *p_xy = xy;
 

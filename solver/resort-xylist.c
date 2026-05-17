@@ -21,7 +21,7 @@
 #include "errors.h"
 #include "log.h"
 #include "an-bool.h"
-
+#include "memory.h"
 int resort_xylist(const char* infn, const char* outfn,
                   const char* fluxcol, const char* backcol,
                   int ascending) {
@@ -131,8 +131,8 @@ int resort_xylist(const char* infn, const char* outfn,
 
         // Sort by non-background-subtracted flux...
         perm2 = permuted_sort(back, sizeof(double), compare, NULL, N);
-
-        used = malloc(N * sizeof(anbool));
+        used = smart_malloc(N * sizeof(anbool));
+        if(!used)   return 0;
         memset(used, 0, N * sizeof(anbool));
 
         // Check sort...
@@ -171,15 +171,15 @@ int resort_xylist(const char* infn, const char* outfn,
             goto bailout;
         }
 
-        free(flux);
+        smart_free(flux);
         flux = NULL;
-        free(back);
+        smart_free(back);
         back = NULL;
-        free(perm1);
+        smart_free(perm1);
         perm1 = NULL;
-        free(perm2);
+        smart_free(perm2);
         perm2 = NULL;
-        free(used);
+        smart_free(used);
         used = NULL;
     }
 
@@ -200,11 +200,11 @@ int resort_xylist(const char* infn, const char* outfn,
         fclose(fout);
     if (fin)
         fclose(fin);
-    free(flux);
-    free(back);
-    free(perm1);
-    free(perm2);
-    free(used);
+    smart_free(flux);
+    smart_free(back);
+    smart_free(perm1);
+    smart_free(perm2);
+    smart_free(used);
     return -1;
 }
 

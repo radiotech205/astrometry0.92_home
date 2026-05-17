@@ -171,7 +171,8 @@ int main_verify(int argc, char** args) {
         }
         Nindex = rd_n(rd);
         logmsg("Found %i indx objects\n", Nindex);
-        indexpix = malloc(2 * Nindex * sizeof(double));
+        indexpix = smart_malloc(2 * Nindex * sizeof(double));
+        if(!indexpix)   return 0;
         for (i=0; i<Nindex; i++) {
             anbool ok;
             double ra = rd_getra(rd, i);
@@ -179,11 +180,11 @@ int main_verify(int argc, char** args) {
             ok = sip_radec2pixelxy(&sip, ra, dec, indexpix + i*2, indexpix + i*2 + 1);
             assert(ok);
         }
-
         logmsg("CRPIX is (%g,%g)\n", sip.wcstan.crpix[0], sip.wcstan.crpix[1]);
 
         {
-            double* fieldsigma2s = malloc(Nfield * sizeof(double));
+            double* fieldsigma2s = smart_malloc(Nfield * sizeof(double));
+            if(!fieldsigma2s)   return 0;
             int besti;
             int* theta;
             double logodds;
@@ -287,12 +288,12 @@ double verify_star_lists(double* refxys, int NR,
                 plotstuff_output(&pargs);
             }*/
 
-            free(theta);
-            free(fieldsigma2s);
+            smart_free(theta);
+            smart_free(fieldsigma2s);
         }
 
-        free(fieldpix);
-        free(indexpix);
+        smart_free(fieldpix);
+        smart_free(indexpix);
     }
 
 

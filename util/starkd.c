@@ -18,9 +18,9 @@
 #include "log.h"
 #include "ioutils.h"
 #include "fitsioutils.h"
-
+#include "memory.h"
 static startree_t* startree_alloc() {
-    startree_t* s = calloc(1, sizeof(startree_t));
+    startree_t* s = smart_calloc(1, sizeof(startree_t));
     if (!s) {
         fprintf(stderr, "Failed to allocate a star kdtree struct.\n");
         return NULL;
@@ -109,7 +109,7 @@ double* startree_get_data_column_array(startree_t* s, const char* colname, const
 }
 
 void startree_free_data_column(startree_t* s, double* d) {
-    free(d);
+    smart_free(d);
 }
 
 void startree_search_for_radec(const startree_t* s, double ra, double dec, double radius,
@@ -154,7 +154,7 @@ void startree_search_for(const startree_t* s, const double* xyzcenter, double ra
     *nresults = N;
 
     if (radecresults) {
-        *radecresults = malloc(N * 2 * sizeof(double));
+        *radecresults = smart_malloc(N * 2 * sizeof(double));
         for (i=0; i<N; i++)
             xyzarr2radecdegarr(xyz + i*3, (*radecresults) + i*2);
     }
@@ -164,7 +164,7 @@ void startree_search_for(const startree_t* s, const double* xyzcenter, double ra
         res->results.d = NULL;
     }
     if (starinds) {
-        *starinds = malloc(res->nres * sizeof(int));
+        *starinds = smart_malloc(res->nres * sizeof(int));
         for (i=0; i<N; i++)
             (*starinds)[i] = res->inds[i];
     }
@@ -310,22 +310,22 @@ startree_t* startree_open(const char* fn) {
 int startree_close(startree_t* s) {
     if (!s) return 0;
     if (s->inverse_perm)
-        free(s->inverse_perm);
+        smart_free(s->inverse_perm);
     if (s->header)
         qfits_header_destroy(s->header);
     if (s->tree) {
         if (s->writing) {
-            free(s->tree->data.any);
+            smart_free(s->tree->data.any);
             s->tree->data.any = NULL;
             kdtree_free(s->tree);
-            free(s->sweep);
+            smart_free(s->sweep);
         }
         else
             kdtree_fits_close(s->tree);
     }
     if (s->tagalong)
         fitstable_close(s->tagalong);
-    free(s);
+    smart_free(s);
     return 0;
 }
 
@@ -363,7 +363,7 @@ static fitstable_t* get_tagalong(startree_t* s, anbool report_errs) {
         }
         type = fits_get_dupstring(hdr, "AN_FILE");
         eq = streq(type, AN_FILETYPE_TAGALONG);
-        free(type);
+        smart_free(type);
         if (!eq)
             continue;
         ext = i;
@@ -398,7 +398,7 @@ int startree_check_inverse_perm(startree_t* s) {
     int i, N;
     uint8_t* counts;
     N = Ndata(s);
-    counts = calloc(Ndata(s), sizeof(uint8_t));
+    counts = smart_calloc(Ndata(s), sizeof(uint8_t));
     for (i=0; i<N; i++) {
         assert(s->inverse_perm[i] >= 0);
         assert(s->inverse_perm[i] < N);
@@ -414,7 +414,7 @@ void startree_compute_inverse_perm(startree_t* s) {
     if (s->inverse_perm)
         return;
     // compute inverse permutation vector.
-    s->inverse_perm = malloc(Ndata(s) * sizeof(int));
+    s->inverse_perm = smart_malloc(Ndata(s) * sizeof(int));
     if (!s->inverse_perm) {
         fprintf(stderr, "Failed to allocate star kdtree inverse permutation vector.\n");
         return;
@@ -461,7 +461,7 @@ char* startree_get_cut_band(const startree_t* s) {
             break;
         }
     }
-    free(str);
+    smart_free(str);
     return rtn;
 }
 
@@ -517,7 +517,7 @@ startree_t* startree_new() {
     s->header = qfits_header_default();
     if (!s->header) {
         fprintf(stderr, "Failed to create a qfits header for star kdtree.\n");
-        free(s);
+        smart_free(s);
         return NULL;
     }
     qfits_header_add(s->header, "AN_FILE", AN_FILETYPE_STARTREE, "This file is a star kdtree.", NULL);

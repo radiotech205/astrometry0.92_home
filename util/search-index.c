@@ -17,7 +17,7 @@
 #include "tic.h"
 #include "fitstable.h"
 #include "mathutil.h"
-
+#include "memory.h"
 static const char* OPTIONS_search_index = "hvr:d:R:o:";
 
 void printHelp_search_index(char* progname) {
@@ -117,7 +117,7 @@ int main_search_index(int argc, char **argv) {
         {
             char* colstr = sl_join(cols, ", ");
             logmsg("Tag-along columns: %s\n", colstr);
-            free(colstr);
+            smart_free(colstr);
         }
 
         logmsg("Searching for stars around RA,Dec (%g, %g), radius %g deg.\n",
@@ -152,7 +152,7 @@ int main_search_index(int argc, char **argv) {
             rowsize = fitstable_get_struct_size(table);
             assert(rowsize == tagsize + 2*sizeof(double));
             debug("rowsize=%i\n", rowsize);
-            rowbuf = malloc(rowsize);
+            rowbuf = smart_malloc(rowsize);
 
             logverb("Output table:\n");
             if (log_get_level() >= LOG_VERB)
@@ -178,7 +178,7 @@ int main_search_index(int argc, char **argv) {
                     exit(-1);
                 }
             }
-            free(rowbuf);
+            smart_free(rowbuf);
 
             if (fitstable_fix_header(table)) {
                 ERROR("Failed to fix header of output table");
@@ -188,8 +188,8 @@ int main_search_index(int argc, char **argv) {
         }
 
         sl_free2(cols);
-        free(radecs);
-        free(inds);
+        smart_free(radecs);
+        smart_free(inds);
 
         index_close(&index);
     }

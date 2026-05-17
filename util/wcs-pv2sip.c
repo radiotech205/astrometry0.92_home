@@ -22,7 +22,7 @@
 #include "qfits_rw.h"
 
 #include "fit-wcs.h"
-
+#include "memory.h"
 /*
  Scamp's copy of wcslib has  "raw_to_pv" in "proj.c".
 
@@ -251,7 +251,7 @@ sip_t* wcs_pv2sip_header(qfits_header* hdr,
 
     if (xy == NULL) {
         int k = 0;
-        xy = malloc(Nxy * 2 * sizeof(double));
+        xy = smart_malloc(Nxy * 2 * sizeof(double));
         for (i=0; i<ny; i++) {
             y = ylo + i*ystep;
             for (j=0; j<nx; j++) {
@@ -269,7 +269,7 @@ sip_t* wcs_pv2sip_header(qfits_header* hdr,
     }
 
     // distorted RA,Dec
-    rddist = malloc(2 * Nxy * sizeof(double));
+    rddist = smart_malloc(2 * Nxy * sizeof(double));
 
     for (j=0; j<Nxy; j++) {
         double ix = xy[2*j+0];
@@ -298,12 +298,12 @@ sip_t* wcs_pv2sip_header(qfits_header* hdr,
                       rddist + 2*j, rddist + 2*j + 1);
     }
 
-    sip = malloc(sizeof(sip_t));
+    sip = smart_malloc(sizeof(sip_t));
     assert(sip);
     {
         double* starxyz;
         Unused int rtn;
-        starxyz = malloc(3 * Nxy * sizeof(double));
+        starxyz = smart_malloc(3 * Nxy * sizeof(double));
         for (i=0; i<Nxy; i++)
             radecdegarr2xyzarr(rddist + i*2, starxyz + i*3);
         memset(sip, 0, sizeof(sip_t));
@@ -322,11 +322,11 @@ sip_t* wcs_pv2sip_header(qfits_header* hdr,
             printf("Fit SIP inverse polynomials:\n");
             sip_print(sip);
         }
-        free(starxyz);
+        smart_free(starxyz);
     }
 
-    free(rddist);
-    free(radec);
+    smart_free(rddist);
+    smart_free(radec);
     return sip;
 }
 
@@ -394,15 +394,15 @@ int wcs_pv2sip(const char* wcsinfn, int ext,
             "WCSAXES =                    2 /                                                ";
         np = strlen(prefix);
         nt = np + FITS_LINESZ * sl_size(lines);
-        txthdr = malloc(nt);
+        txthdr = smart_malloc(nt);
         memset(txthdr, ' ', np + FITS_LINESZ * sl_size(lines));
         memcpy(txthdr, prefix, np);
         for (i=0; i<sl_size(lines); i++)
             memcpy(txthdr + np + i*FITS_LINESZ, sl_get(lines, i), strlen(sl_get(lines, i)));
         sl_free2(lines);
         hdr = qfits_header_read_hdr_string(txthdr, nt);
-        free(txthdr);
-        free(txt);
+        smart_free(txthdr);
+        smart_free(txt);
     } else {
         hdr = anqfits_get_header2(wcsinfn, ext);
     }

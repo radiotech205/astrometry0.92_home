@@ -13,7 +13,7 @@
 #include "ioutils.h"
 #include "qidxfile.h"
 #include "errors.h"
-
+#include "memory.h"
 #define CHUNK_QIDX 0
 
 static int callback_read_header(fitsbin_t* fb, fitsbin_chunk_t* chunk) {
@@ -40,7 +40,7 @@ static qidxfile* new_qidxfile(const char* fn, anbool writing) {
     qidxfile* qf;
     fitsbin_chunk_t chunk;
 
-    qf = calloc(1, sizeof(qidxfile));
+    qf = smart_calloc(1, sizeof(qidxfile));
     if (!qf) {
         SYSERROR("Couldn't malloc a qidxfile struct");
         return NULL;
@@ -98,7 +98,7 @@ int qidxfile_close(qidxfile* qf) {
     if (fitsbin_get_fid(qf->fb))
         fits_pad_file(fitsbin_get_fid(qf->fb));
     rtn = fitsbin_close(qf->fb);
-    free(qf);
+    smart_free(qf);
     return rtn;
 }
 

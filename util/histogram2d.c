@@ -11,17 +11,17 @@
 #include "os-features.h"
 #include "histogram2d.h"
 #include "errors.h"
-
+#include "memory.h"
 static histogram2d* hist_new(int nx, int ny) {
-    histogram2d* h = calloc(1, sizeof(histogram2d));
+    histogram2d* h = smart_calloc(1, sizeof(histogram2d));
     if (!h) {
         ERROR("Couldn't allocate a histogram2d.");
         return NULL;
     }
-    h->hist = calloc((size_t)nx*(size_t)ny, sizeof(int));
+    h->hist = smart_calloc((size_t)nx*(size_t)ny, sizeof(int));
     if (!h->hist) {
         ERROR("Couldn't allocate a histogram2d with %ix%i bins.", nx, ny);
-        free(h);
+        smart_free(h);
         return NULL;
     }
     h->NX = nx;
@@ -50,8 +50,8 @@ histogram2d* histogram2d_new_nbins(double minX, double maxX, int NbinsX,
 
 
 void histogram2d_free(histogram2d* h) {
-    free(h->hist);
-    free(h);
+    smart_free(h->hist);
+    smart_free(h);
 }
 
 int histogram2d_add(histogram2d* h, double x, double y) {

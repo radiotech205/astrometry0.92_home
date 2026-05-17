@@ -16,7 +16,7 @@
 #include "keywords.h"
 #include "tic.h"
 #include "anqfits.h"
-
+#include "memory.h"
 static const char* OPTIONS_resample = "hrvz:o:e:w:WqI:x:y:";
 
 void printHelp_resample(char* progname) {
@@ -234,7 +234,7 @@ int main_resample(int argc, char** args) {
 
     logmsg("Output image will be %i x %i\n", outW, outH);
 
-    outimg = malloc(outW * outH * sizeof(double));
+    outimg = smart_malloc(outW * outH * sizeof(double));
     for (i=0; i<outW*outH; i++)
         outimg[i] = 1.0 / 0.0;
 
@@ -242,7 +242,7 @@ int main_resample(int argc, char** args) {
                    outimg, outW, outH, outwcs,
                    NULL, 0,
                    TRUE, order);
-    free(img);
+    smart_free(img);
 
     logmsg("Writing output: %s\n", outfn);
     // HACK -- reduce output image to float, in-place.
@@ -256,7 +256,7 @@ int main_resample(int argc, char** args) {
         }
     }
 
-    free(outimg);
+    smart_free(outimg);
     return 0;
 
 }

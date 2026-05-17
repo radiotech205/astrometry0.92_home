@@ -19,7 +19,7 @@
 #include "log.h"
 #include "boilerplate.h"
 #include "fitsioutils.h"
-
+#include "memory.h"
 // use 64-bit healpixes
 typedef int64_t hpint;
 // blocklist types
@@ -146,7 +146,7 @@ int uniformize_catalog(fitstable_t* intable, fitstable_t* outtable,
     dec = fitstable_read_column(intable, deccol, dubl);
     if (!dec) {
         ERROR("Failed to find DEC column (%s) in table", deccol);
-        free(ra);
+        smart_free(ra);
         return -1;
     }
 
@@ -161,8 +161,8 @@ int uniformize_catalog(fitstable_t* intable, fitstable_t* outtable,
         sortval = fitstable_read_column(intable, sortcol, dubl);
         if (!sortval) {
             ERROR("Failed to read sorting column \"%s\"", sortcol);
-            free(ra);
-            free(dec);
+            smart_free(ra);
+            smart_free(dec);
             return -1;
         }
         inorder = permuted_sort(sortval, sizeof(double),
@@ -298,18 +298,18 @@ int uniformize_catalog(fitstable_t* intable, fitstable_t* outtable,
 
     il_free(myhps);
     myhps = NULL;
-    free(inorder);
+    smart_free(inorder);
     inorder = NULL;
-    free(ra);
+    smart_free(ra);
     ra = NULL;
-    free(dec);
+    smart_free(dec);
     dec = NULL;
-
-    outorder = malloc(N * sizeof(int));
+    outorder = smart_malloc(N * sizeof(int));
+    if(!outorder)   return 0;
     outi = 0;
 
-    npersweep = calloc(nsweeps, sizeof(int));
-
+    npersweep = smart_calloc(nsweeps, sizeof(int));
+    if(!outorder)   return 0;
     for (k=0; k<nsweeps; k++) {
         int starti = outi;
         int32_t j32;
@@ -346,7 +346,7 @@ int uniformize_catalog(fitstable_t* intable, fitstable_t* outtable,
     starlists = NULL;
 
     //////
-    free(sortval);
+    smart_free(sortval);
     sortval = NULL;
 
     logmsg("Total: %i stars\n", outi);
@@ -387,7 +387,7 @@ int uniformize_catalog(fitstable_t* intable, fitstable_t* outtable,
         sprintf(key, "SWEEP%i", (k+1));
         fits_header_add_int(outhdr, key, npersweep[k], "# stars added");
     }
-    free(npersweep);
+    smart_free(npersweep);
 
     if (fitstable_write_primary_header(outtable)) {
         ERROR("Failed to write primary header");
@@ -410,7 +410,7 @@ int uniformize_catalog(fitstable_t* intable, fitstable_t* outtable,
         ERROR("Failed to fix output table header");
         return -1;
     }
-    free(outorder);
+    smart_free(outorder);
     return 0;
 }
 

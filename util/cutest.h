@@ -3,13 +3,13 @@
 
 #include <setjmp.h>
 #include <stdarg.h>
-
+#include "memory.h"
 /* CuString */
 
 char* CuStrAlloc(int size);
 char* CuStrCopy(const char* old);
 
-#define CU_ALLOC(TYPE)		((TYPE*) malloc(sizeof(TYPE)))
+#define CU_ALLOC(TYPE)		((TYPE*) smart_malloc(sizeof(TYPE)))
 
 #define HUGE_STRING_LEN	8192
 #define STRING_MAX		256

@@ -8,7 +8,7 @@
 #include "fileutils.h"
 #include "ioutils.h"
 #include "os-features.h"
-
+#include "memory.h"
 char* resolve_path(const char* filename, const char* basedir) {
     // we don't use canonicalize_file_name() because it requires the paths
     // to actually exist, while this function should work for output files
@@ -22,7 +22,7 @@ char* resolve_path(const char* filename, const char* basedir) {
     asprintf_safe(&path, "%s/%s", basedir, filename);
     //return path;
     rtn = an_canonicalize_file_name(path);
-    free(path);
+    smart_free(path);
     return rtn;
 }
 
@@ -34,30 +34,30 @@ char* find_executable(const char* progname, const char* sibling) {
 
     // If it's an absolute path, just return it.
     if (progname[0] == '/')
-        return strdup(progname);
+        return smart_strdup(progname);
 
     // If it's a relative path, resolve it.
     if (strchr(progname, '/')) {
         path = an_canonicalize_file_name(progname);
         if (path && file_executable(path))
             return path;
-        free(path);
+        smart_free(path);
     }
 
     // If "sibling" contains a "/", then check relative to it.
     if (sibling && strchr(sibling, '/')) {
         // dirname() overwrites its arguments, so make a copy...
-        sib = strdup(sibling);
-        sibdir = strdup(dirname(sib));
-        free(sib);
+        sib = smart_strdup(sibling);
+        sibdir = smart_strdup(dirname(sib));
+        smart_free(sib);
 
         asprintf_safe(&path, "%s/%s", sibdir, progname);
-        free(sibdir);
+        smart_free(sibdir);
 
         if (file_executable(path))
             return path;
 
-        free(path);
+        smart_free(path);
     }
 
     // Search PATH.
@@ -77,7 +77,7 @@ char* find_executable(const char* progname, const char* sibling) {
         asprintf_safe(&path, "%.*s/%s", len, pathenv, progname);
         if (file_executable(path))
             return path;
-        free(path);
+        smart_free(path);
         if (colon)
             pathenv = colon + 1;
         else
@@ -94,7 +94,7 @@ char* an_canonicalize_file_name(const char* fn) {
     char* result;
     // Ugh, special cases.
     if (streq(fn, ".") || streq(fn, "/"))
-        return strdup(fn);
+        return smart_strdup(fn);
 
     dirs = sl_split(NULL, fn, "/");
     for (i=0; i<sl_size(dirs); i++) {

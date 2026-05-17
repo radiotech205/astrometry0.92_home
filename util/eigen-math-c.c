@@ -4,22 +4,22 @@
  */
 #include <assert.h>
 #include <stdlib.h>
-
+#include "memory.h"
 #include "eigen-math.h"
 
 evector_t* evector_new(int N) {
-    evector_t* v = malloc(sizeof(evector_t));
+    evector_t* v = smart_malloc(sizeof(evector_t));
     assert(v);
-    v->data = calloc(N, sizeof(double));
+    v->data = smart_calloc(N, sizeof(double));
     assert(v->data);
     v->N = N;
     return v;
 }
 
 ematrix_t* ematrix_new(int R, int C) {
-    ematrix_t* m = malloc(sizeof(ematrix_t));
+    ematrix_t* m = smart_malloc(sizeof(ematrix_t));
     assert(m);
-    m->data = calloc(R * C, sizeof(double));
+    m->data = smart_calloc(R * C, sizeof(double));
     assert(m->data);
     m->rows = R;
     m->cols = C;

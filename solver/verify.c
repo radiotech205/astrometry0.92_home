@@ -65,9 +65,10 @@ verify_field_t* verify_field_preprocess(const starxy_t* fieldxy) {
     verify_field_t* vf;
     int Nleaf = 5;
 
-    int result;
+    int result = 0;
 //    vf = usage_memory(sizeof(verify_field_t), &result);
-    vf = usage_memory2(sizeof(verify_field_t), &result, verify_field_preprocess);
+    //vf = usage_memory2(sizeof(verify_field_t), &result, verify_field_preprocess);
+    vf = smart_malloc(sizeof(verify_field_t));
     if(!vf || result)   return NULL;
     if (!vf) {
         fprintf(stderr, "Failed to allocate space for a verify_field_t().\n");
@@ -99,9 +100,9 @@ void verify_field_free(verify_field_t* vf) {
     if (!vf)
         return;
     kdtree_free(vf->ftree);
-    free(vf->xy);
-    free(vf->fieldcopy);
-    free(vf);
+    smart_free(vf->xy);
+    smart_free(vf->fieldcopy);
+    smart_free(vf);
 }
 
 static double get_sigma2_at_radius(double verify_pix2, double r2, double quadr2) {
@@ -116,9 +117,10 @@ static double* compute_sigma2s(const verify_field_t* vf,
     int i;
     double R2;
 
-    int result;
+    int result = 0;
 //    sigma2s = usage_memory(NF * sizeof(double), &result);
-    sigma2s = usage_memory2(NF * sizeof(double), &result, compute_sigma2s);
+    //sigma2s = usage_memory2(NF * sizeof(double), &result, compute_sigma2s);
+    sigma2s = smart_malloc(NF * sizeof(double));
     if(!sigma2s || result)  return NULL;
 
     if (!do_gamma) {
@@ -198,9 +200,10 @@ static void verify_get_test_stars(verify_t* v, const verify_field_t* vf, MatchOb
     v->testsigma = verify_compute_sigma2s(vf, mo, pix2, do_gamma);
     v->testperm = permutation_init(NULL, v->NTall);
 
-    int result;
+    int result = 0;
 //    v->tbadguys = usage_memory(v->NTall * sizeof(int), &result);
-    v->tbadguys = usage_memory2(v->NTall * sizeof(int), &result, verify_get_test_stars);
+    //v->tbadguys = usage_memory2(v->NTall * sizeof(int), &result, verify_get_test_stars);
+    v->tbadguys = smart_malloc(v->NTall * sizeof(int));
     if(!v->tbadguys || result)
         return;
     if (DEBUGVERIFY) {
@@ -272,7 +275,7 @@ static void verify_get_test_stars(verify_t* v, const verify_field_t* vf, MatchOb
     v->NT = igood;
     // remember the bad guys
     memcpy(v->testperm + igood, v->tbadguys, ibad * sizeof(int));
-    free(keepers);
+    smart_free(keepers);
 
     if (DEBUGVERIFY) {
         debug2("after dedup and removing quad:\n");
@@ -348,9 +351,10 @@ static void verify_apply_ror(verify_t* v,
 
         if (binids) {
             assert(uni_nw);
-            int result;
+            int result = 0;
 //            goodbins = usage_memory((size_t)uni_nw * (size_t)uni_nh * sizeof(anbool), &result);
-            goodbins = usage_memory2((size_t)uni_nw * (size_t)uni_nh * sizeof(anbool), &result, verify_apply_ror);
+            //goodbins = usage_memory2((size_t)uni_nw * (size_t)uni_nh * sizeof(anbool), &result, verify_apply_ror);
+            goodbins = smart_malloc((size_t)uni_nw * (size_t)uni_nh * sizeof(anbool));
             if(!goodbins || result) return;
 
             Ngoodbins = 0;
@@ -388,7 +392,7 @@ static void verify_apply_ror(verify_t* v,
             }
             // Count good bins to find effective area... (ugh)
             if(bincenters) {
-                free(bincenters);
+                smart_free(bincenters);
                 bincenters = NULL;
             }
             assert(!bincenters);
@@ -453,10 +457,10 @@ static void verify_apply_ror(verify_t* v,
         debug2("ROR changed from %g to %g\n", sqrt(ror2),
                sqrt(verify_get_ror2(Q2, effA, distractors, v->NR, pix2)));
 
-        free(goodbins);
+        smart_free(goodbins);
     }
-    free(bincenters);
-    free(binids);
+    smart_free(bincenters);
+    smart_free(binids);
 
     *p_effA = effA;
     if (p_uninw)
@@ -500,16 +504,18 @@ static double real_verify_star_lists(verify_t* v,
 
     // Build a tree out of the index stars in pixel space...
     // kdtree scrambles the data array so make a copy first.
-    int result;
+    int result = 0;
 //    refcopy = usage_memory(2 * v->NR * sizeof(double), &result);
-    refcopy = usage_memory2(2 * v->NR * sizeof(double), &result, real_verify_star_lists);
+    //refcopy = usage_memory2(2 * v->NR * sizeof(double), &result, real_verify_star_lists);
+    refcopy = smart_malloc(2 * v->NR * sizeof(double));
     if(!refcopy || result)  goto clean_exit;
     // we must pack/unpermute the refxys; remember this packing order in "rperm".
     // we borrow storage for "rperm"...
     if (!v->badguys) {
-        int result;
+        int result = 0;
 //        v->badguys = usage_memory(v->NR * sizeof(int), &result);
-        v->badguys = usage_memory2(v->NR * sizeof(int), &result, real_verify_star_lists);
+        //v->badguys = usage_memory2(v->NR * sizeof(int), &result, real_verify_star_lists);
+        v->badguys = smart_malloc(v->NR * sizeof(int));
         if(!v->badguys || result)   goto clean_exit;
     }
     rperm = v->badguys;
@@ -522,21 +528,24 @@ static double real_verify_star_lists(verify_t* v,
     rtree = kdtree_build(NULL, refcopy, v->NR, 2, Nleaf, KDTT_DOUBLE, KD_BUILD_SPLIT);
 
 //    rmatches = usage_memory(v->NR * sizeof(int), &result);
-    rmatches = usage_memory2(v->NR * sizeof(int), &result, real_verify_star_lists);
+    //rmatches = usage_memory2(v->NR * sizeof(int), &result, real_verify_star_lists);
+    rmatches = smart_malloc(v->NR * sizeof(int));
     if(!rmatches || result) goto clean_exit;
 
     for (i=0; i<v->NR; i++)
         rmatches[i] = -1;
 
 //    rprobs = usage_memory(v->NR * sizeof(double), &result);
-    rprobs = usage_memory2(v->NR * sizeof(double), &result, real_verify_star_lists);
+    //rprobs = usage_memory2(v->NR * sizeof(double), &result, real_verify_star_lists);
+    rprobs = smart_malloc(v->NR * sizeof(double));
     if(!rprobs || result)   goto clean_exit;
     for (i=0; i<v->NR; i++)
         rprobs[i] = -LARGE_VAL;
 
     if (p_logodds || data_log_passes(DATALOG_MASK_VERIFY, DLOG_ODDS)) {
 //        all_logodds = usage_memory(v->NT * sizeof(double), &result);
-        all_logodds = usage_memory2(v->NT * sizeof(double), &result, real_verify_star_lists);
+        //all_logodds = usage_memory2(v->NT * sizeof(double), &result, real_verify_star_lists);
+        all_logodds = smart_malloc(v->NT * sizeof(double));
         if(!all_logodds || result)  goto clean_exit;
     }
     if (p_logodds)
@@ -548,7 +557,8 @@ static double real_verify_star_lists(verify_t* v,
         *p_istopped = -1;
 
 //    theta = usage_memory(v->NT * sizeof(int), &result);
-    theta = usage_memory2(v->NT * sizeof(int), &result, real_verify_star_lists);
+    //theta = usage_memory2(v->NT * sizeof(int), &result, real_verify_star_lists);
+    theta = smart_malloc(v->NT * sizeof(int));
     if(!theta || result)    goto clean_exit;
 
     logbg = log(1.0 / effective_area);
@@ -785,12 +795,12 @@ static double real_verify_star_lists(verify_t* v,
          */
     }
 
-    free(rmatches);
+    smart_free(rmatches);
 
     if (p_theta)
         *p_theta = theta;
     else
-        free(theta);
+        smart_free(theta);
 
     if (p_besti)
         *p_besti = besti;
@@ -799,21 +809,21 @@ static double real_verify_star_lists(verify_t* v,
         *p_worstlogodds = bestworstlogodds;
 
     if (all_logodds && !*p_logodds)
-        free(all_logodds);
+        smart_free(all_logodds);
 
-    free(rprobs);
+    smart_free(rprobs);
 
     kdtree_free(rtree);
-    free(refcopy);
+    smart_free(refcopy);
 
     return bestlogodds;
 clean_exit:
-    if(refcopy)     free(refcopy);
-    if(v->badguys)  {free(v->badguys); v->badguys = NULL;}
-    if(rmatches)    free(rmatches);
-    if(rprobs)      free(rprobs);
-    if(all_logodds) free(all_logodds);
-    if(theta)       free(theta);
+    if(refcopy)     smart_free(refcopy);
+    if(v->badguys)  {smart_free(v->badguys); v->badguys = NULL;}
+    if(rmatches)    smart_free(rmatches);
+    if(rprobs)      smart_free(rprobs);
+    if(all_logodds) smart_free(all_logodds);
+    if(theta)       smart_free(theta);
 
     return -LARGE_VAL;
 }
@@ -853,9 +863,10 @@ void verify_get_index_stars(const double* fieldcenter, double fieldr2,
 
     // Compute index RA,Decs if requested.
     if (p_indexradec) {
-        int result;
+        int result = 0;
 //        radec = usage_memory(2 * NI * sizeof(double), &result);
-        radec = usage_memory2(2 * NI * sizeof(double), &result, verify_get_index_stars);
+        //radec = usage_memory2(2 * NI * sizeof(double), &result, verify_get_index_stars);
+        radec = smart_malloc(2 * NI * sizeof(double));
         if(!radec || result)    return;
         for (i=0; i<NI; i++)
             // note that the "inbounds" permutation is applied to "indxyz" here.
@@ -863,39 +874,40 @@ void verify_get_index_stars(const double* fieldcenter, double fieldr2,
             xyzarr2radecdegarr(indxyz + 3*inbounds[i], radec + 2*i);
         *p_indexradec = radec;
     }
-    free(indxyz);
-    free(inbounds);
+    smart_free(indxyz);
+    smart_free(inbounds);
 
     // Each index star has a "sweep number" assigned during index building;
     // it roughly represents a local brightness ordering.  Use this to sort the
     // index stars.
-    int result;
+    int result = 0;
 //    sweep = usage_memory(NI * sizeof(int), &result);
-    sweep = usage_memory2(NI * sizeof(int), &result, verify_get_index_stars);
+    //sweep = usage_memory2(NI * sizeof(int), &result, verify_get_index_stars);
+    sweep = smart_malloc(NI * sizeof(int));
     if(!sweep || result)    return;
     for (i=0; i<NI; i++)
         sweep[i] = skdt->sweep[starid[i]];
     perm = permuted_sort(sweep, sizeof(int), compare_ints_asc, NULL, NI);
-    free(sweep);
+    smart_free(sweep);
 
     if (indexpix) {
         permutation_apply(perm, NI, *indexpix, *indexpix, 2 * sizeof(double));
-        *indexpix = realloc(*indexpix, NI * 2 * sizeof(double));
+        *indexpix = smart_realloc(*indexpix, NI * 2 * sizeof(double));
         if(!indexpix)   return;
     }
 
     if (p_starids) {
         permutation_apply(perm, NI, starid, starid, sizeof(int));
-        starid = realloc(starid, NI * sizeof(int));
+        starid = smart_realloc(starid, NI * sizeof(int));
         if(!starid) return;
         *p_starids = starid;
     } else
-        free(starid);
+        smart_free(starid);
 
     if (p_indexradec)
         permutation_apply(perm, NI, radec, radec, 2 * sizeof(double));
 
-    free(perm);
+    smart_free(perm);
 
     *p_nindex = NI;
 }
@@ -915,9 +927,10 @@ static anbool* verify_deduplicate_field_stars(verify_t* v, const verify_field_t*
     int options = KD_OPTIONS_NO_RESIZE_RESULTS | KD_OPTIONS_SMALL_RADIUS;
 
     // default to FALSE
-    int result;
+    int result = 0;
 //    keepers = usage_memory(v->NTall * sizeof(anbool), &result);
-    keepers = usage_memory2(v->NTall * sizeof(anbool), &result, verify_deduplicate_field_stars);
+    //keepers = usage_memory2(v->NTall * sizeof(anbool), &result, verify_deduplicate_field_stars);
+    keepers = smart_malloc(v->NTall * sizeof(anbool));
     if(!keepers || result)  return FALSE;
     for (i=0; i<v->NT; i++) {
         ti = v->testperm[i];
@@ -987,16 +1000,18 @@ void verify_uniformize_field(const double* xy,
     int* binids = NULL;
 
     if (p_binids) {
-        int result;
+        int result = 0;
 //        binids = usage_memory((size_t)N * sizeof(int), &result);
-        binids = usage_memory2((size_t)N * sizeof(int), &result, verify_uniformize_field);
+        //binids = usage_memory2((size_t)N * sizeof(int), &result, verify_uniformize_field);
+        binids = smart_malloc((size_t)N * sizeof(int));
         if(!binids || result)   return;
         *p_binids = binids;
     }
 
-    int result;
+    int result = 0;
 //    lists = usage_memory((size_t)nw * (size_t)nh * sizeof(il*), &result);
-    lists = usage_memory2((size_t)nw * (size_t)nh * sizeof(il*), &result, verify_uniformize_field);
+    //lists = usage_memory2((size_t)nw * (size_t)nh * sizeof(il*), &result, verify_uniformize_field);
+    lists = smart_malloc((size_t)nw * (size_t)nh * sizeof(il*));
     if(!lists || result)   return;
 
 
@@ -1017,9 +1032,10 @@ void verify_uniformize_field(const double* xy,
 
     if (p_bincounts) {
         // note the bin occupancies.
-        int result;
+        int result = 0;
 //        bincounts = usage_memory((size_t)nw * (size_t)nh * sizeof(int), &result);
-        bincounts = usage_memory2((size_t)nw * (size_t)nh * sizeof(int), &result, verify_uniformize_field);
+        //bincounts = usage_memory2((size_t)nw * (size_t)nh * sizeof(int), &result, verify_uniformize_field);
+        bincounts = smart_malloc((size_t)nw * (size_t)nh * sizeof(int));
         if(!bincounts || result)   return;
 
 
@@ -1052,15 +1068,16 @@ void verify_uniformize_field(const double* xy,
 
     for (i=0; i<(nw*nh); i++)
         il_free(lists[i]);
-    free(lists);
+    smart_free(lists);
 }
 
 double* verify_uniformize_bin_centers(double fieldW, double fieldH,
                                       int nw, int nh) {
     int i,j;
-    int result;
+    int result = 0;
 //    double* bxy  = usage_memory((size_t)nw * (size_t)nh * (size_t)2 * sizeof(double), &result);
-    double* bxy  = usage_memory2((size_t)nw * (size_t)nh * (size_t)2 * sizeof(double), &result, verify_uniformize_bin_centers);
+    //double* bxy  = usage_memory2((size_t)nw * (size_t)nh * (size_t)2 * sizeof(double), &result, verify_uniformize_bin_centers);
+    double* bxy = smart_malloc((size_t)nw * (size_t)nh * (size_t)2 * sizeof(double));
     if(!bxy || result)
         return NULL;
 
@@ -1126,9 +1143,10 @@ static void set_null_mo(MatchObj* mo) {
 
 static void check_permutation(const int* perm, int N) {
     int i;
-    int result;
+    int result = 0;
 //    int* counts = usage_memory(N * sizeof(int), &result);
-    int* counts = usage_memory2(N * sizeof(int), &result, check_permutation);
+    //int* counts = usage_memory2(N * sizeof(int), &result, check_permutation);
+    int* counts = smart_malloc(N * sizeof(int));
     if(!counts || result)   return;
 
 
@@ -1140,7 +1158,7 @@ static void check_permutation(const int* perm, int N) {
     for (i=0; i<N; i++) {
         assert(counts[i] == 1);
     }
-    free(counts);
+    smart_free(counts);
 }
 
 static void fixup_theta(int* theta, double* allodds, int ibailed, int istopped, verify_t* v,
@@ -1196,14 +1214,16 @@ static void fixup_theta(int* theta, double* allodds, int ibailed, int istopped, 
                    (v->refstarid ? v->refstarid[ri] : -1000), v->testxy[ti*2+0], v->testxy[ti*2+1], v->refxy[ri*2+0], v->refxy[ri*2+1]);
         }
     }
-    int result;
+    int result = 0;
 
 //    etheta = usage_memory(v->NTall * sizeof(int), &result);
-    etheta = usage_memory2(v->NTall * sizeof(int), &result, fixup_theta);
+    //etheta = usage_memory2(v->NTall * sizeof(int), &result, fixup_theta);
+    etheta = smart_malloc(v->NTall * sizeof(int));
     if(!etheta || result) return;
 
 //    eodds = usage_memory(v->NTall * sizeof(double), &result);
-    eodds = usage_memory2(v->NTall * sizeof(double), &result, fixup_theta);
+    //eodds = usage_memory2(v->NTall * sizeof(double), &result, fixup_theta);
+    eodds = smart_malloc(v->NTall * sizeof(double));
     if(!eodds || result) return;
 
     // Apply the "refperm" permutation, mostly to cut out the stars that
@@ -1215,7 +1235,8 @@ static void fixup_theta(int* theta, double* allodds, int ibailed, int istopped, 
     // which will renumber them.
 
 //    invrperm = usage_memory(v->NRall * sizeof(int), &result);
-    invrperm = usage_memory2(v->NRall * sizeof(int), &result, fixup_theta);
+    //invrperm = usage_memory2(v->NRall * sizeof(int), &result, fixup_theta);
+    invrperm = smart_malloc(v->NRall * sizeof(int));
     if(!invrperm || result) return;
 
 #define BAD_PERM -1000000
@@ -1256,7 +1277,7 @@ static void fixup_theta(int* theta, double* allodds, int ibailed, int istopped, 
         }
     }
 
-    free(invrperm);
+    smart_free(invrperm);
 
     for (i=v->NT; i<v->NTall; i++) {
         ti = v->testperm[i];
@@ -1406,14 +1427,16 @@ void verify_hit(const startree_t* skdt, int index_cutnside, MatchObj* mo,
     }
     //logverb("Found %i reference stars in the bounding circle\n", v->NRall);
     // Find index stars within the rectangular field.
-    int result;
+    int result = 0;
 
 //    v->refxy = usage_memory(v->NRall * 2 * sizeof(double), &result);
-    v->refxy = usage_memory2(v->NRall * 2 * sizeof(double), &result, verify_hit);
+    //v->refxy = usage_memory2(v->NRall * 2 * sizeof(double), &result, verify_hit);
+    v->refxy = smart_malloc(v->NRall * 2 * sizeof(double));
     if(!v->refxy || result) goto bailout;
 
 //    v->refperm = usage_memory(v->NRall * sizeof(int), &result);
-    v->refperm = usage_memory2(v->NRall * sizeof(int), &result, verify_hit);
+    //v->refperm = usage_memory2(v->NRall * sizeof(int), &result, verify_hit);
+    v->refperm = smart_malloc(v->NRall * sizeof(int));
     if(!v->refperm || result) goto bailout;
 
     igood = 0;
@@ -1441,7 +1464,8 @@ void verify_hit(const startree_t* skdt, int index_cutnside, MatchObj* mo,
     // permuted_sort below, so none of
     // the elements between NRimage and NRall will be touched.)
 //    sweep = usage_memory(v->NRall * sizeof(int), &result);
-    sweep = usage_memory2(v->NRall * sizeof(int), &result, verify_hit);
+    //sweep = usage_memory2(v->NRall * sizeof(int), &result, verify_hit);
+    sweep = smart_malloc(v->NRall * sizeof(int));
     if(!sweep || result) goto bailout;
 
     for (i=0; i<v->NRall; i++)
@@ -1449,14 +1473,15 @@ void verify_hit(const startree_t* skdt, int index_cutnside, MatchObj* mo,
     // Note here that we're passing in an existing permutation array; it
     // gets re-permuted during this call.
     permuted_sort(sweep, sizeof(int), compare_ints_asc, v->refperm, v->NR);
-    free(sweep);
+    smart_free(sweep);
     sweep = NULL;
     debug2("Found %i reference stars.\n", v->NR);
 
     // "refstarids" are indices into the star kdtree and could be used to
     // retrieve "tag-along" data with, eg, startree_get_data_column().
 //    v->badguys = usage_memory(v->NR * sizeof(int), &result);
-    v->badguys = usage_memory2(v->NR * sizeof(int), &result, verify_hit);
+    //v->badguys = usage_memory2(v->NR * sizeof(int), &result, verify_hit);
+    v->badguys = smart_malloc(v->NR * sizeof(int));
     if(!v->badguys || result) goto bailout;
     // remove reference stars that are part of the quad.
     if (!fake_match) {
@@ -1596,16 +1621,16 @@ void verify_hit(const startree_t* skdt, int index_cutnside, MatchObj* mo,
     }
 
  cleanup:
-    if(refxyz)      free(refxyz);
-    if(theta)       free(theta);
-    if(allodds)     free(allodds);
-    if(v->testperm) free(v->testperm);
-    if(v->testsigma)free(v->testsigma);
-    if(v->tbadguys) free(v->tbadguys);
-    if(v->refperm)  free(v->refperm);
-    if(v->refxy)    free(v->refxy);
-    if(v->refstarid)free(v->refstarid);
-    if(v->badguys)  free(v->badguys);
+    if(refxyz)      smart_free(refxyz);
+    if(theta)       smart_free(theta);
+    if(allodds)     smart_free(allodds);
+    if(v->testperm) smart_free(v->testperm);
+    if(v->testsigma)smart_free(v->testsigma);
+    if(v->tbadguys) smart_free(v->tbadguys);
+    if(v->refperm)  smart_free(v->refperm);
+    if(v->refxy)    smart_free(v->refxy);
+    if(v->refstarid)smart_free(v->refstarid);
+    if(v->badguys)  smart_free(v->badguys);
     return;
 
  bailout:
@@ -1616,12 +1641,12 @@ void verify_hit(const startree_t* skdt, int index_cutnside, MatchObj* mo,
 
 // Free the things we added to this mo.
 void verify_free_matchobj(MatchObj* mo) {
-    free(mo->refxyz);
-    free(mo->refstarid);
-    free(mo->refxy);
-    free(mo->theta);
-    free(mo->matchodds);
-    free(mo->testperm);
+    smart_free(mo->refxyz);
+    smart_free(mo->refstarid);
+    smart_free(mo->refxy);
+    smart_free(mo->theta);
+    smart_free(mo->matchodds);
+    smart_free(mo->testperm);
     mo->testperm = NULL;
     mo->refxyz = NULL;
     mo->refstarid = NULL;
@@ -1632,37 +1657,42 @@ void verify_free_matchobj(MatchObj* mo) {
 
 void verify_matchobj_deep_copy(const MatchObj* mo, MatchObj* dest) {
     if (mo->refxyz) {
-        int result;
+        int result = 0;
         //dest->refxyz  = usage_memory(mo->nindex * 3 * sizeof(double), &result);
-        dest->refxyz  = usage_memory2(mo->nindex * 3 * sizeof(double), &result, verify_matchobj_deep_copy);
+        //dest->refxyz  = usage_memory2(mo->nindex * 3 * sizeof(double), &result, verify_matchobj_deep_copy);
+        dest->refxyz = smart_malloc(mo->nindex * 3 * sizeof(double));
         if(!dest->refxyz  || result)   return;
         memcpy(dest->refxyz, mo->refxyz, mo->nindex * 3 * sizeof(double));
     }
     if (mo->refxy) {
-        int result;
+        int result = 0;
 //        dest->refxy  = usage_memory(mo->nindex * 2 * sizeof(double), &result);
-        dest->refxy  = usage_memory2(mo->nindex * 2 * sizeof(double), &result, verify_matchobj_deep_copy);
+        //dest->refxy  = usage_memory2(mo->nindex * 2 * sizeof(double), &result, verify_matchobj_deep_copy);
+        dest->refxy = smart_malloc(mo->nindex * 2 * sizeof(double));
         if(!dest->refxy  || result)   return;
         memcpy(dest->refxy, mo->refxy, mo->nindex * 2 * sizeof(double));
     }
     if (mo->refstarid) {
-        int result;
+        int result = 0;
 //        dest->refstarid  = usage_memory(mo->nindex * sizeof(int), &result);
-        dest->refstarid  = usage_memory2(mo->nindex * sizeof(int), &result, verify_matchobj_deep_copy);
+        //dest->refstarid  = usage_memory2(mo->nindex * sizeof(int), &result, verify_matchobj_deep_copy);
+        dest->refstarid = smart_malloc(mo->nindex * sizeof(int));
         if(!dest->refstarid  || result)   return;
         memcpy(dest->refstarid, mo->refstarid, mo->nindex * sizeof(int));
     }
     if (mo->matchodds) {
-        int result;
+        int result = 0;
 //        dest->matchodds  = usage_memory(mo->nfield * sizeof(double), &result);
-        dest->matchodds  = usage_memory2(mo->nfield * sizeof(double), &result, verify_matchobj_deep_copy);
+        //dest->matchodds  = usage_memory2(mo->nfield * sizeof(double), &result, verify_matchobj_deep_copy);
+        dest->matchodds = smart_malloc(mo->nfield * sizeof(double));
         if(!dest->matchodds  || result)   return;
         memcpy(dest->matchodds, mo->matchodds, mo->nfield * sizeof(double));
     }
     if (mo->theta) {
-        int result;
+        int result = 0;
 //        dest->theta  = usage_memory(mo->nfield * sizeof(int), &result);
-        dest->theta  = usage_memory2(mo->nfield * sizeof(int), &result, verify_matchobj_deep_copy);
+        //dest->theta  = usage_memory2(mo->nfield * sizeof(int), &result, verify_matchobj_deep_copy);
+        dest->theta = smart_malloc(mo->nfield * sizeof(int));
         if(!dest->theta  || result)   return;
         memcpy(dest->theta, mo->theta, mo->nfield * sizeof(int));
     }
@@ -1713,17 +1743,17 @@ double verify_star_lists(double* refxys, int NR,
                                p_worstlogodds, &ibailed, &istopped);
     fixup_theta(theta, allodds, ibailed, istopped, &v, besti, NR, NULL,
                 &etheta, &eodds);
-    free(theta);
-    free(allodds);
+    smart_free(theta);
+    smart_free(allodds);
 
     if (p_all_logodds)
         *p_all_logodds = eodds;
     else
-        free(eodds);
+        smart_free(eodds);
     if (p_theta)
         *p_theta = etheta;
     else
-        free(etheta);
+        smart_free(etheta);
 
     if (p_besti)
         *p_besti = besti;
@@ -1731,10 +1761,10 @@ double verify_star_lists(double* refxys, int NR,
     if (p_testperm)
         *p_testperm = v.testperm;
     else
-        free(v.testperm);
+        smart_free(v.testperm);
 
-    free(v.refperm);
-    free(v.badguys);
+    smart_free(v.refperm);
+    smart_free(v.badguys);
     return X;
 }
 
@@ -1793,12 +1823,14 @@ double verify_star_lists_ror(double* refxys, int NR,
     v.testsigma = (double*)testsigma2s;
     v.refperm = permutation_init(NULL, NR);
     v.testperm = permutation_init(NULL, NT);
-    int result;
+    int result = 0;
     //v.tbadguys = usage_memory(v.NTall * sizeof(int), &result);
-    v.tbadguys = usage_memory2(v.NTall * sizeof(int), &result, verify_star_lists_ror);
+    //v.tbadguys = usage_memory2(v.NTall * sizeof(int), &result, verify_star_lists_ror);
+    v.tbadguys = smart_malloc(v.NTall * sizeof(int));
     if(!v.tbadguys || result)   return 0.0;
 //    v.badguys = usage_memory(v.NTall * sizeof(int), &result);
-    v.badguys = usage_memory2(v.NTall * sizeof(int), &result, verify_star_lists_ror);
+    //v.badguys = usage_memory2(v.NTall * sizeof(int), &result, verify_star_lists_ror);
+    v.badguys = smart_malloc(v.NTall * sizeof(int));
     if(!v.badguys || result)   return 0.0;
     ror2 = verify_get_ror2(Q2, W*H, distractors, NR, pix2);
     logverb("RoR: %g\n", sqrt(ror2));
@@ -1868,17 +1900,17 @@ double verify_star_lists_ror(double* refxys, int NR,
                                    p_worstlogodds, &ibailed, &istopped);
         fixup_theta(theta, allodds, ibailed, istopped, &v, besti, NR, NULL,
                     &etheta, &eodds);
-        free(theta);
-        free(allodds);
+        smart_free(theta);
+        smart_free(allodds);
 
         if (p_all_logodds)
             *p_all_logodds = eodds;
         else
-            free(eodds);
+            smart_free(eodds);
         if (p_theta)
             *p_theta = etheta;
         else
-            free(etheta);
+            smart_free(etheta);
 
         if (p_besti)
             *p_besti = besti;
@@ -1891,16 +1923,16 @@ double verify_star_lists_ror(double* refxys, int NR,
     if (p_testperm)
         *p_testperm = v.testperm;
     else
-        free(v.testperm);
+        smart_free(v.testperm);
 
 
     if (p_refperm)
         *p_refperm = v.refperm;
     else
-        free(v.refperm);
+        smart_free(v.refperm);
 
-    free(v.badguys);
-    free(v.tbadguys);
+    smart_free(v.badguys);
+    smart_free(v.tbadguys);
 	
     return X;
 }

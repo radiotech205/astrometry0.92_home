@@ -14,7 +14,7 @@
 #include "sip.h"
 #include "starutil.h"
 #include "mathutil.h"
-
+#include "memory.h"
 static anbool has_distortions(const sip_t* sip) {
     return (sip->a_order >= 0);
 }
@@ -46,7 +46,7 @@ double sip_imageh(sip_t* sip) {
     return sip->wcstan.imageh;
 }
 sip_t* sip_create() {
-    sip_t* sip = calloc(1, sizeof(sip_t));
+    sip_t* sip = smart_calloc(1, sizeof(sip_t));
 
     sip->wcstan.cd[0][0] = 1;
     sip->wcstan.cd[0][1] = 0;
@@ -57,7 +57,7 @@ sip_t* sip_create() {
 }
 
 void sip_free(sip_t* sip) {
-    free(sip);
+    smart_free(sip);
 }
 
 void sip_copy(sip_t* dest, const sip_t* src) {

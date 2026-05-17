@@ -31,7 +31,7 @@
 #include "errors.h"
 #include "quad-utils.h"
 #include "quad-builder.h"
-
+#include "memory.h"
 // healpix type
 /*
 typedef il hpl;
@@ -164,13 +164,14 @@ static anbool find_stars(hpquads_t* me, double radius2, int R) {
          Alternatively, we could re-fetch the results.d ...
          */
         int k;
-        char* tempdata = malloc((size_t)me->sort_size * (size_t)N);
+        char* tempdata = smart_malloc((size_t)me->sort_size * (size_t)N);
+        if(!tempdata)   return FALSE;
         for (k=0; k<N; k++)
             memcpy(tempdata + k*me->sort_size,
                    ((char*)me->sort_data) + me->sort_size * me->res->inds[k],
                    me->sort_size);
         perm = permuted_sort(tempdata, me->sort_size, me->sort_func, NULL, N);
-        free(tempdata);
+        smart_free(tempdata);
 
     } else {
         // find permutation that sorts by index...
@@ -180,7 +181,7 @@ static anbool find_stars(hpquads_t* me, double radius2, int R) {
     permutation_apply(perm, N, me->res->inds, me->res->inds, sizeof(int));
     permutation_apply(perm, N, me->res->results.d, me->res->results.d, 3 * sizeof(double));
 
-    free(perm);
+    smart_free(perm);
 
     me->inds = (int*)me->res->inds;
     me->stars = me->res->results.d;
@@ -446,8 +447,8 @@ int hpquads(startree_t* starkd,
     codes->index_scale_upper = quads->index_scale_upper = distsq2rad(me->quad_dist2_upper);
     codes->index_scale_lower = quads->index_scale_lower = distsq2rad(me->quad_dist2_lower);
 	
-    me->nuses = calloc(N, sizeof(unsigned char));
-
+    me->nuses = smart_calloc(N, sizeof(unsigned char));
+    if(!me->nuses)  return 0;
     // hprad = sqrt(2) * (healpix side length / 2.)
     hprad = arcmin2dist(healpix_side_length_arcmin(Nside)) * M_SQRT1_2;
     quadscale = 0.5 * sqrt(me->quad_dist2_upper);
@@ -588,7 +589,7 @@ int hpquads(startree_t* starkd,
     me->res = NULL;
     me->inds = NULL;
     me->stars = NULL;
-    free(me->nuses);
+    smart_free(me->nuses);
     me->nuses = NULL;
 
     logmsg("Writing quads...\n");

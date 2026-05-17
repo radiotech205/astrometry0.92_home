@@ -37,7 +37,7 @@
 #include <math.h>
 
 #include "cutest.h"
-
+#include "memory.h"
 static int CUTEST_DIE_ON_FAIL = 0;
 
 void CuDieOnFail() {
@@ -50,7 +50,7 @@ void CuDieOnFail() {
 
 char* CuStrAlloc(int size)
 {
-	char* newStr = (char*) malloc( sizeof(char) * (size) );
+    char* newStr = (char*) smart_malloc( sizeof(char) * (size) );
 	return newStr;
 }
 
@@ -70,23 +70,23 @@ void CuStringInit(CuString* str)
 {
 	str->length = 0;
 	str->size = STRING_MAX;
-	str->buffer = (char*) malloc(sizeof(char) * str->size);
+    str->buffer = (char*) smart_malloc(sizeof(char) * str->size);
 	str->buffer[0] = '\0';
 }
 
 CuString* CuStringNew(void)
 {
-	CuString* str = (CuString*) malloc(sizeof(CuString));
+    CuString* str = (CuString*) smart_malloc(sizeof(CuString));
 	str->length = 0;
 	str->size = STRING_MAX;
-	str->buffer = (char*) malloc(sizeof(char) * str->size);
+    str->buffer = (char*) smart_malloc(sizeof(char) * str->size);
 	str->buffer[0] = '\0';
 	return str;
 }
 
 void CuStringResize(CuString* str, int newSize)
 {
-	str->buffer = (char*) realloc(str->buffer, sizeof(char) * newSize);
+    str->buffer = (char*) smart_realloc(str->buffer, sizeof(char) * newSize);
 	str->size = newSize;
 }
 
@@ -137,8 +137,8 @@ void CuStringInsert(CuString* str, const char* text, int pos)
 
 void CuStringFree(CuString* str) {
     if (!str) return;
-    free(str->buffer);
-    free(str);
+    smart_free(str->buffer);
+    smart_free(str);
 }
 
 /*-------------------------------------------------------------------------*
@@ -157,9 +157,9 @@ void CuTestInit(CuTest* t, const char* name, TestFunction function)
 
 void CuTestFree(CuTest* t) {
     if (!t) return;
-    free((void*)t->name);
-    free((void*)t->message);
-    free(t);
+    smart_free((void*)t->name);
+    smart_free((void*)t->message);
+    smart_free(t);
 }
 
 CuTest* CuTestNew(const char* name, TestFunction function)
@@ -294,7 +294,7 @@ void CuSuiteFree(CuSuite* cs) {
     for (i=0; i<cs->count; i++) {
         CuTestFree(cs->list[i]);
     }
-    free(cs);
+    smart_free(cs);
 }
 
 void CuSuiteAdd(CuSuite* testSuite, CuTest *testCase)

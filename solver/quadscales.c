@@ -79,7 +79,7 @@ int main_quadscales(int argc, char** args) {
             fprintf(stderr, "Failed to open quad file %s.\n", fn);
             continue;
         }
-        free(fn);
+        smart_free(fn);
 
         asprintf_safe(&fn, "%s.skdt.fits", basename);
         fprintf(stderr, "Opening skdt file %s...\n", fn);
@@ -88,7 +88,7 @@ int main_quadscales(int argc, char** args) {
             fprintf(stderr, "Failed to read star kdtree %s.\n", fn);
             continue;
         }
-        free(fn);
+        smart_free(fn);
 
         hist = histogram_new_nbins(qf->index_scale_lower,
                                    qf->index_scale_upper, Nbins);

@@ -15,7 +15,7 @@
 #include "anwcs.h"
 #include "log.h"
 #include "errors.h"
-
+#include "memory.h"
 static const char* OPTIONS_fit_wcs = "hx:X:Y:R:D:c:r:o:s:W:H:CU:V:v";
 
 void print_help_fit_wcs(char* progname) {
@@ -192,7 +192,7 @@ int main_fit_wcs(int argc, char** args) {
     }
     logverb("Read %i points from %s and %s\n", N, rdlsfn, xylsfn);
 
-    xyz = (double*)malloc(sizeof(double) * 3 * N);
+    xyz = (double*)smart_malloc(sizeof(double) * 3 * N);
     if (!xyz) {
         ERROR("Failed to allocate %i xyz coords", N);
         goto bailout;
@@ -254,9 +254,9 @@ int main_fit_wcs(int argc, char** args) {
     if (xyls)
         xylist_close(xyls);
     if (fieldxy)
-        free(fieldxy);
+        smart_free(fieldxy);
     if (xyz)
-        free(xyz);
+        smart_free(xyz);
 
     return rtn;
 }

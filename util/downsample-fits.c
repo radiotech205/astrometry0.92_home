@@ -20,7 +20,7 @@
 #include "anqfits.h"
 #include "qfits_convert.h"
 #include "qfits_header.h"
-
+#include "memory.h"
 static const char* OPTIONS_downsample_fits = "hvs:e:";
 
 static void printHelp_downsample_fits(char* progname) {
@@ -148,7 +148,7 @@ int main_downsample_fits(int argc, char *argv[]) {
     winw = W;
     winh = (int)ceil(ceil(1024*1024 / (float)winw) / (float)scale) * scale;
 
-    outimg = malloc((size_t)ceil(winw/scale)*(size_t)ceil(winh/scale) * sizeof(float));
+    outimg = smart_malloc((size_t)ceil(winw/scale)*(size_t)ceil(winh/scale) * sizeof(float));
 			
     logmsg("Image is %i x %i x %i\n", W, H, (int)animg->planes);
     logmsg("Output will be %i x %i x %i\n", outw, outh, (int)animg->planes);
@@ -178,7 +178,7 @@ int main_downsample_fits(int argc, char *argv[]) {
 
                 average_image_f(img, nx, ny, scale, edge,
                                 &outw, &outh, outimg);
-                free(img);
+                smart_free(img);
 
                 logverb("  writing %i x %i\n", outw, outh);
                 if (outw * outh == 0)
@@ -201,7 +201,7 @@ int main_downsample_fits(int argc, char *argv[]) {
             }
         }
     }
-    free(outimg);
+    smart_free(outimg);
     anqfits_close(anq);
 
     if (tostdout) {

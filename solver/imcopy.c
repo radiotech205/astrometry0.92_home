@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "fitsio.h"
-
+#include "memory.h"
 int main_imcopy(int argc, char *argv[])
 {
     fitsfile *infptr, *outfptr;   /* FITS file pointers defined in fitsio.h */
@@ -155,13 +155,13 @@ int main_imcopy(int argc, char *argv[])
 
                 /* try to allocate memory for the entire image */
                 /* use double type to force memory alignment */
-                array = (double *) calloc(npix, bytepix);
+                array = (double *) smart_calloc(npix, bytepix);
 
                 /* if allocation failed, divide size by 2 and try again */
                 while (!array && iteration < 10)  {
                     iteration++;
                     npix = npix / 2;
-                    array = (double *) calloc(npix, bytepix);
+                    array = (double *) smart_calloc(npix, bytepix);
                 }
 
                 if (!array)  {
@@ -184,7 +184,7 @@ int main_imcopy(int argc, char *argv[])
                         totpix = totpix - npix;
                         first  = first  + npix;
                     }
-                free(array);
+                smart_free(array);
             }
 
             if (single) break;  /* quit if only copying a single HDU */

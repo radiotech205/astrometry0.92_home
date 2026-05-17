@@ -19,7 +19,7 @@
 #include "boilerplate.h"
 #include "log.h"
 #include "errors.h"
-
+#include "memory.h"
 int unpermute_stars(startree_t* treein, quadfile_t* qfin,
                     startree_t** p_treeout, quadfile_t* qfout,
                     anbool dosweeps, anbool check,
@@ -133,9 +133,9 @@ int unpermute_stars(startree_t* treein, quadfile_t* qfin,
         ERROR("Failed to fix quadfile header");
         return -1;
     }
-
     treeout = startree_new();
-    treeout->tree = malloc(sizeof(kdtree_t));
+    treeout->tree = smart_malloc(sizeof(kdtree_t));
+    if(!treeout->tree)  return 0;
     memcpy(treeout->tree, treein->tree, sizeof(kdtree_t));
     treeout->tree->perm = NULL;
 
@@ -172,9 +172,9 @@ int unpermute_stars(startree_t* treein, quadfile_t* qfin,
                 break;
             an_fits_copy_header(treein->header, treeout->header, key);
         }
-
         // compute sweep array.
-        treeout->sweep = malloc(N * sizeof(uint8_t));
+        treeout->sweep = smart_malloc(N * sizeof(uint8_t));
+        if(!treeout->sweep) return 0;
         for (i=0; i<N; i++) {
             int ind = treein->tree->perm[i];
             // Stars are sorted first by sweep and then by brightness within
@@ -290,8 +290,8 @@ int unpermute_stars_files(const char* skdtinfn, const char* quadinfn,
 
     quadfile_close(qfin);
     startree_close(treein);
-    free(treeout->sweep);
-    free(treeout->tree);
+    smart_free(treeout->sweep);
+    smart_free(treeout->tree);
     treeout->tree = NULL;
     startree_close(treeout);
 

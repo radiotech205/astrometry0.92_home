@@ -18,7 +18,7 @@
 #include "errors.h"
 #include "resample.h"
 #include "an-bool.h"
-
+#include "memory.h"
 /*
  * simplexy.c
  *
@@ -154,20 +154,20 @@ void simplexy_set_defaults(simplexy_t* s) {
 }
 
 void simplexy_free_contents(simplexy_t* s) {
-    free(s->image);
+    smart_free(s->image);
     s->image = NULL;
-    free(s->image_u8);
+    smart_free(s->image_u8);
     s->image_u8 = NULL;
-    free(s->x);
+    smart_free(s->x);
     s->x = NULL;
-    free(s->y);
+    smart_free(s->y);
     s->y = NULL;
-    free(s->flux);
+    smart_free(s->flux);
     s->flux = NULL;
-    free(s->background);
+    smart_free(s->background);
     s->background = NULL;
-    free(s->fluxL);
-    free(s->backgroundL);
+    smart_free(s->fluxL);
+    smart_free(s->backgroundL);
     s->fluxL = s->backgroundL = NULL;
 }
 
@@ -214,7 +214,7 @@ int simplexy_run(simplexy_t* s) {
         if (s->image)
             bgsub = s->image;
         else {
-            bgsub_i16 = malloc((size_t)nx * (size_t)ny * sizeof(int16_t));
+            bgsub_i16 = smart_malloc((size_t)nx * (size_t)ny * sizeof(int16_t));
             bgfree = bgsub_i16;
             for (i=0; i<nx*ny; i++)
                 bgsub_i16[i] = s->image_u8[i];
@@ -226,7 +226,7 @@ int simplexy_run(simplexy_t* s) {
 
         if (s->image) {
             float* medianfiltered;
-            medianfiltered = malloc((size_t)nx * (size_t)ny * sizeof(float));
+            medianfiltered = smart_malloc((size_t)nx * (size_t)ny * sizeof(float));
             bgfree = medianfiltered;
             dmedsmooth(s->image, NULL, nx, ny, s->halfbox, medianfiltered);
 
@@ -249,7 +249,7 @@ int simplexy_run(simplexy_t* s) {
                 s->halfbox = floor(((float)MIN(nx,ny) - 1.0) / 2.0);
             assert(MIN(nx,ny) >= 2*s->halfbox+1);
 
-            medianfiltered_u8 = malloc((size_t)nx * (size_t)ny * sizeof(unsigned char));
+            medianfiltered_u8 = smart_malloc((size_t)nx * (size_t)ny * sizeof(unsigned char));
             ctmf(s->image_u8, medianfiltered_u8, nx, ny, nx, nx, s->halfbox, 1, 512*1024);
 
             if (s->bgimgfn) {
@@ -258,7 +258,7 @@ int simplexy_run(simplexy_t* s) {
             }
 
             // Background-subtracted image.
-            bgsub_i16 = malloc((size_t)nx * (size_t)ny * sizeof(int16_t));
+            bgsub_i16 = smart_malloc((size_t)nx * (size_t)ny * sizeof(int16_t));
             bgfree = bgsub_i16;
             for (i=0; i<nx*ny; i++)
                 //bgsub_i16[i] = (int16_t)s->image_u8[i] - (int16_t)medianfiltered_u8[i];
@@ -276,7 +276,7 @@ int simplexy_run(simplexy_t* s) {
     }
 
     if (s->dpsf > 0.0) {
-        smoothed = malloc((size_t)nx * (size_t)ny * sizeof(float));
+        smoothed = smart_malloc((size_t)nx * (size_t)ny * sizeof(float));
         smoothfree = smoothed;
         /* smooth by the point spread function (the optimal detection
          filter, since we assume a symmetric Gaussian PSF) */
@@ -288,7 +288,7 @@ int simplexy_run(simplexy_t* s) {
         if (bgsub)
             smoothed = bgsub;
         else {
-            smoothed = malloc((size_t)nx * (size_t)ny * sizeof(float));
+            smoothed = smart_malloc((size_t)nx * (size_t)ny * sizeof(float));
             smoothfree = smoothed;
             for (i=0; i<(nx*ny); i++)
                 smoothed[i] = bgsub_i16[i];
@@ -328,7 +328,7 @@ int simplexy_run(simplexy_t* s) {
     }
 
     /* find pixels above the noise level, and flag a box of pixels around each one. */
-    mask = malloc((size_t)nx*(size_t)ny);
+    mask = smart_malloc((size_t)nx*(size_t)ny);
     if (!dmask(smoothed, nx, ny, limit, s->dpsf, mask)) {
         FREEVEC(smoothfree);
         return 0;
@@ -339,13 +339,13 @@ int simplexy_run(simplexy_t* s) {
     if (s->maskimgfn) {
         logverb("Writing masked image \"%s\"\n", s->maskimgfn);
         if (s->image_u8) {
-            uint8_t* maskedimg = malloc((size_t)nx * (size_t)ny);
+            uint8_t* maskedimg = smart_malloc((size_t)nx * (size_t)ny);
             for (i=0; i<nx*ny; i++)
                 maskedimg[i] = mask[i] * s->image_u8[i];
             write_fits_u8_image(maskedimg, nx, ny, s->maskimgfn);
             free(maskedimg);
         } else {
-            float* maskedimg = malloc((size_t)nx * (size_t)ny * sizeof(float));
+            float* maskedimg = smart_malloc((size_t)nx * (size_t)ny * sizeof(float));
             for (i=0; i<nx*ny; i++)
                 maskedimg[i] = mask[i] * s->image[i];
             write_fits_float_image(maskedimg, nx, ny, s->maskimgfn);
@@ -354,14 +354,14 @@ int simplexy_run(simplexy_t* s) {
     }
 
     /* find connected-components in the mask image. */
-    ccimg = malloc((size_t)nx * (size_t)ny * sizeof(int));
+    ccimg = smart_malloc((size_t)nx * (size_t)ny * sizeof(int));
     dfind2_u8(mask, nx, ny, ccimg, &nblobs);
     FREEVEC(mask);
     logverb("simplexy: found %i blobs\n", nblobs);
 
     if (s->blobimgfn) {
         int j;
-        uint8_t* blobimg = malloc((size_t)nx * (size_t)ny);
+        uint8_t* blobimg = smart_malloc((size_t)nx * (size_t)ny);
         logverb("Writing blob image \"%s\"\n", s->blobimgfn);
         memset(blobimg, 0, sizeof(uint8_t) * nx*ny);
         for (j=0; j<ny; j++) {
@@ -386,8 +386,8 @@ int simplexy_run(simplexy_t* s) {
         free(blobimg);
     }
 
-    s->x = malloc(s->maxnpeaks * sizeof(float));
-    s->y = malloc(s->maxnpeaks * sizeof(float));
+    s->x = smart_malloc(s->maxnpeaks * sizeof(float));
+    s->y = smart_malloc(s->maxnpeaks * sizeof(float));
 	
     /* find all peaks within each object */
     logverb("simplexy: finding peaks...\n");
@@ -400,14 +400,14 @@ int simplexy_run(simplexy_t* s) {
     logmsg("simplexy: found %i sources.\n", s->npeaks);
     FREEVEC(ccimg);
 
-    s->x   = realloc(s->x, s->npeaks * sizeof(float));
-    s->y   = realloc(s->y, s->npeaks * sizeof(float));
-    s->flux       = malloc(s->npeaks * sizeof(float));
-    s->background = malloc(s->npeaks * sizeof(float));
+    s->x   = smart_realloc(s->x, s->npeaks * sizeof(float));
+    s->y   = smart_realloc(s->y, s->npeaks * sizeof(float));
+    s->flux       = smart_malloc(s->npeaks * sizeof(float));
+    s->background = smart_malloc(s->npeaks * sizeof(float));
 
     if (s->Lorder) {
-        s->fluxL       = malloc(s->npeaks * sizeof(float));
-        s->backgroundL = malloc(s->npeaks * sizeof(float));
+        s->fluxL       = smart_malloc(s->npeaks * sizeof(float));
+        s->backgroundL = smart_malloc(s->npeaks * sizeof(float));
     }
 
     for (i = 0; i < s->npeaks; i++) {
@@ -453,7 +453,7 @@ int simplexy_run(simplexy_t* s) {
 
             } else {
                 int N = 2*L.order+1;
-                float* tempimg = malloc((size_t)N*(size_t)N*sizeof(float));
+                float* tempimg = smart_malloc((size_t)N*(size_t)N*sizeof(float));
                 int xlo,xhi,ylo,yhi;
                 int j,k;
                 xlo = MAX(0, ix-L.order);

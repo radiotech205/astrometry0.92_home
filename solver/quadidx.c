@@ -23,7 +23,7 @@
 #include "boilerplate.h"
 #include "log.h"
 #include "errors.h"
-
+#include "memory.h"
 static const char* OPTIONS_quadidx = "hFi:o:cv";
 
 static void printHelp_quadidx(char* progname) {
@@ -109,7 +109,7 @@ int main_quadidx(int argc, char *argv[]) {
         logmsg("Check passed.\n");
     }
 
-    quadlist = calloc(quads->numstars, sizeof(il*));
+    quadlist = smart_calloc(quads->numstars, sizeof(il*));
     if (!quadlist) {
         SYSERROR("Failed to allocate list of quad contents");
         exit(-1);
@@ -178,7 +178,8 @@ int main_quadidx(int argc, char *argv[]) {
         il* list = quadlist[i];
         if (list) {
             thisnumq = (uint)il_size(list);
-            stars = malloc(thisnumq * sizeof(uint));
+            stars = smart_malloc(thisnumq * sizeof(uint));
+            if(!stars)  return 0;
             il_copy(list, 0, thisnumq, (int*)stars);
         } else {
             thisnumq = 0;
@@ -192,12 +193,12 @@ int main_quadidx(int argc, char *argv[]) {
         }
 
         if (list) {
-            free(stars);
+            smart_free(stars);
             il_free(list);
             quadlist[i] = NULL;
         }
     }
-    free(quadlist);
+    smart_free(quadlist);
     quadfile_close(quads);
 
     if (qidxfile_close(qidx)) {

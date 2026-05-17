@@ -13,7 +13,7 @@
 #include "log.h"
 #include "an-thread.h"
 #include "tic.h"
-
+#include "memory.h"
 static int g_thread_specific = 0;
 static log_t g_logger;
 
@@ -22,7 +22,7 @@ void log_set_thread_specific() {
 }
 
 static void* logts_init_key(void* user) {
-    log_t* l = malloc(sizeof(log_t));
+    log_t* l = smart_malloc(sizeof(log_t));
     if (user)
         memcpy(l, user, sizeof(log_t));
     return l;
@@ -74,13 +74,13 @@ void log_use_function(logfunc_t func, void* baton) {
 }
 
 log_t* log_create(enum log_level level) {
-    log_t* logger = calloc(1, sizeof(log_t));
+    log_t* logger = smart_calloc(1, sizeof(log_t));
     return logger;
 }
 
 void log_free(log_t* log) {
     assert(log);
-    free(log);
+    smart_free(log);
 }
 
 AN_THREAD_DECLARE_STATIC_MUTEX(loglock);

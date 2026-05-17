@@ -13,7 +13,7 @@
 #include "fitsioutils.h"
 #include "errors.h"
 #include "quad-utils.h"
-
+#include "memory.h"
 void quad_write(codefile_t* codes, quadfile_t* quads,
                 unsigned int* quad, startree_t* starkd,
                 int dimquads, int dimcodes) {
@@ -108,7 +108,7 @@ static int callback_read_header(fitsbin_t* fb, fitsbin_chunk_t* chunk) {
 
 static codefile_t* new_codefile(const char* fn, anbool writing, anbool inmem) {
     fitsbin_chunk_t chunk;
-    codefile_t* cf = calloc(1, sizeof(codefile_t));
+    codefile_t* cf = smart_calloc(1, sizeof(codefile_t));
     if (!cf) {
         SYSERROR("Couldn't calloc a codefile struct");
         return NULL;
@@ -155,7 +155,7 @@ int codefile_close(codefile_t* cf) {
     int rtn;
     if (!cf) return 0;
     rtn = fitsbin_close(cf->fb);
-    free(cf);
+    smart_free(cf);
     return rtn;
 }
 

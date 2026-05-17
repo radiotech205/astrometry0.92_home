@@ -14,7 +14,7 @@
 #include "fitsioutils.h"
 #include "ioutils.h"
 #include "errors.h"
-
+#include "memory.h"
 char* OPTIONS_subtable = "hc:i:o:";
 
 void printHelp_subtable(char* progname) {
@@ -173,7 +173,7 @@ int main_subtable(int argc, char *argv[]) {
         qfits_header_dump(tablehdr, fout);
         qfits_header_destroy(tablehdr);
 		
-        buffer = realloc(buffer, totalsize * BLOCK);
+        buffer = smart_realloc(buffer, totalsize * BLOCK);
 
         for (off=0; off<table->nr; off+=n) {
             if (off + BLOCK > table->nr)
@@ -194,7 +194,7 @@ int main_subtable(int argc, char *argv[]) {
         qfits_header_destroy(header);
         qfits_table_close(table);
     }
-    free(buffer);
+    smart_free(buffer);
 
     if (fclose(fout)) {
         ERROR("Error closing output file: %s\n", strerror(errno));

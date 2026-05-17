@@ -12,7 +12,7 @@
 #include "simplexy-common.h"
 #include "dimage.h"
 #include "bl.h"
-
+#include "memory.h"
 /*
  * dfind.c
  *
@@ -87,7 +87,7 @@ static dimage_label_t relabel_image(il* on_pixels,
     int i;
     dimage_label_t maxcontiguouslabel = 0;
     dimage_label_t *number;
-    number = malloc(sizeof(dimage_label_t) * maxlabel);
+    number = smart_malloc(sizeof(dimage_label_t) * maxlabel);
     assert(number);
     for (i = 0; i < maxlabel; i++)
         number[i] = LABEL_MAX;
@@ -100,7 +100,7 @@ static dimage_label_t relabel_image(il* on_pixels,
             number[minlabel] = maxcontiguouslabel++;
         object[onpix] = number[minlabel];
     }
-    free(number);
+    smart_free(number);
     return maxcontiguouslabel;
 }
 

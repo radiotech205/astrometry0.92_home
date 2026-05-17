@@ -15,7 +15,7 @@
 #include "matchfile.h"
 #include "rdlist.h"
 #include "solvedfile.h"
-
+#include "memory.h"
 char* OPTIONS_certifiable = "hR:A:B:n:t:f:C:T:F:i:I:m:M:";
 
 void printHelp_certifiable(char* progname) {
@@ -146,9 +146,9 @@ int main_certifiable(int argc, char *argv[]) {
         }
     }
 
-    matchfiles = malloc(ninputfiles * sizeof(matchfile*));
-    mfcursors = calloc(ninputfiles, sizeof(int));
-
+    matchfiles = smart_malloc(ninputfiles * sizeof(matchfile*));
+    mfcursors = smart_calloc(ninputfiles, sizeof(int));
+    if(!matchfiles || ! mfcursors)  return 0;
     for (i=0; i<ninputfiles; i++) {
         char* fname = inputfiles[i];
         printf("Opening matchfile %s...\n", fname);
@@ -285,8 +285,8 @@ int main_certifiable(int argc, char *argv[]) {
     for (i=0; i<ninputfiles; i++) {
         matchfile_close(matchfiles[i]);
     }
-    free(matchfiles);
-    free(mfcursors);
+    smart_free(matchfiles);
+    smart_free(mfcursors);
 
     if (tpsolved)
         solvedfile_setsize(tpsolved, nfields_total);

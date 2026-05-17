@@ -12,7 +12,7 @@
 #include "fitsioutils.h"
 #include "boilerplate.h"
 #include "fitstable.h"
-
+#include "memory.h"
 anbool startree_has_tagalong_data(const fitstable_t* intab) {
     // don't include RA,Dec.
     return fitstable_n_fits_columns(intab) > 2;
@@ -50,7 +50,7 @@ int startree_write_tagalong_table(fitstable_t* intab, fitstable_t* outtab,
     if (indices) {
         if (!remove_radec_columns) {
             // row-by-row raw data copy; read whole tag-along array into memory
-            char* data = malloc((size_t)N * (size_t)R);
+            char* data = smart_malloc((size_t)N * (size_t)R);
             // FIXME -- could read row-by-row if the malloc fails.....
             if (!data) {
                 ERROR("Failed to allocate enough memory to read full tag-along table");
@@ -59,18 +59,18 @@ int startree_write_tagalong_table(fitstable_t* intab, fitstable_t* outtab,
             printf("Reading tag-along table...\n");
             if (fitstable_read_nrows_data(intab, 0, N, data)) {
                 ERROR("Failed to read tag-along table");
-                free(data);
+                smart_free(data);
                 return -1;
             }
             printf("Writing tag-along table...\n");
             for (i=0; i<N; i++) {
                 if (fitstable_write_row_data(outtab, data + (size_t)indices[i]*(size_t)R)) {
                     ERROR("Failed to write a row of data");
-                    free(data);
+                    smart_free(data);
                     return -1;
                 }
             }
-            free(data);
+            smart_free(data);
             
         } else {
             if (fitstable_copy_rows_data(intab, indices, N, outtab)) {
@@ -83,8 +83,8 @@ int startree_write_tagalong_table(fitstable_t* intab, fitstable_t* outtab,
         
         NB = 1000;
         logverb("Input row size: %i, output row size: %i\n", R, fitstable_row_size(outtab));
-        buf = malloc(NB * R);
-	
+        buf = smart_malloc(NB * R);
+        if(!buf)    return 0;
         for (i=0; i<N; i+=NB) {
             int nr = NB;
             if (i+NB > N)
@@ -98,7 +98,7 @@ int startree_write_tagalong_table(fitstable_t* intab, fitstable_t* outtab,
                 return -1;
             }
         }
-        free(buf);
+        smart_free(buf);
     }
     if (fitstable_fix_header(outtab)) {
         ERROR("Failed to fix tag-along data header");
@@ -155,22 +155,22 @@ startree_t* startree_build(fitstable_t* intable,
     }
     printf("First RA,Dec: %g,%g\n", ra[0], dec[0]);
     N = fitstable_nrows(intable);
-    xyz = malloc(N * 3 * sizeof(double));
+    xyz = smart_malloc(N * 3 * sizeof(double));
     if (!xyz) {
         SYSERROR("Failed to malloc xyz array to build startree");
         goto bailout;
     }
     radecdeg2xyzarrmany(ra, dec, xyz, N);
-    free(ra);
+    smart_free(ra);
     ra = NULL;
-    free(dec);
+    smart_free(dec);
     dec = NULL;
     printf("First x,y,z: %g,%g,%g\n", xyz[0], xyz[1], xyz[2]);
 
     starkd = startree_new();
     if (!starkd) {
         ERROR("Failed to allocate startree");
-        free(xyz);
+        smart_free(xyz);
         goto bailout;
     }
     tt = kdtree_kdtypes_to_treetype(KDT_EXT_DOUBLE, treetype, datatype);
@@ -187,10 +187,10 @@ startree_t* startree_build(fitstable_t* intable,
         ERROR("Failed to build star kdtree");
         startree_close(starkd);
         starkd = NULL;
-        free(xyz);
+        smart_free(xyz);
         goto bailout;
     }
-    starkd->tree->name = strdup(STARTREE_NAME);
+    starkd->tree->name = smart_strdup(STARTREE_NAME);
 
     printf("After kdtree_build:\n");
     kdtree_print(starkd->tree);
@@ -231,9 +231,9 @@ startree_t* startree_build(fitstable_t* intable,
 
  bailout:
     if (ra)
-        free(ra);
+        smart_free(ra);
     if (dec)
-        free(dec);
+        smart_free(dec);
     // NOOO don't free xyz -- it belongs to the kdtree!
     //if (xyz)
     //free(xyz);

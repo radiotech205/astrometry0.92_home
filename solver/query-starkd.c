@@ -246,10 +246,10 @@ int main_query_starkd(int argc, char **argv) {
     }
 
  done:
-    free(radec);
-    free(inds);
+    smart_free(radec);
+    smart_free(inds);
     for (i=0; i<pl_size(tagdata); i++)
-        free(pl_get(tagdata, i));
+        smart_free(pl_get(tagdata, i));
     pl_free(tagdata);
     il_free(tagsizes);
 

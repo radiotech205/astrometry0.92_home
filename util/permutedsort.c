@@ -13,13 +13,13 @@
 #include "permutedsort.h"
 #include "os-features.h"
 #include "ioutils.h"
-
+#include "memory.h"
 int* permutation_init(int* perm, int N) {
     int i;
     if (!N)
         return perm;
     if (!perm)
-        perm = malloc(sizeof(int) * N);
+        perm = smart_malloc(sizeof(int) * N);
     for (i=0; i<N; i++)
         perm[i] = i;
     return perm;
@@ -33,7 +33,7 @@ void permutation_apply(const int* perm, int Nperm, const void* inarray,
     char* coutput;
 
     if (inarray == outarray) {
-        temparr = malloc((size_t)elemsize * (size_t)Nperm);
+        temparr = smart_malloc((size_t)elemsize * (size_t)Nperm);
         coutput = temparr;
     } else
         coutput = outarray;
@@ -44,7 +44,7 @@ void permutation_apply(const int* perm, int Nperm, const void* inarray,
 
     if (inarray == outarray) {
         memcpy(outarray, temparr, (size_t)elemsize * (size_t)Nperm);
-        free(temparr);
+        smart_free(temparr);
     }
 }
 

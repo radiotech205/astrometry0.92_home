@@ -18,7 +18,7 @@
 #include "log.h"
 #include "errors.h"
 #include "boilerplate.h"
-
+#include "memory.h"
 int unpermute_quads(quadfile_t* quadin, codetree_t* treein,
                     quadfile_t* quadout, codetree_t** p_treeout,
                     char** args, int argc) {
@@ -100,9 +100,9 @@ int unpermute_quads(quadfile_t* quadin, codetree_t* treein,
         ERROR("Failed to fix quadfile header");
         return -1;
     }
-
     treeout = codetree_new();
-    treeout->tree = malloc(sizeof(kdtree_t));
+    treeout->tree = smart_malloc(sizeof(kdtree_t));
+    if(!treeout->tree)  return 0;
     memcpy(treeout->tree, treein->tree, sizeof(kdtree_t));
     treeout->tree->perm = NULL;
 
@@ -176,7 +176,7 @@ int unpermute_quads_files(const char* quadinfn, const char* ckdtinfn,
         return -1;
     }
 
-    free(treein->tree);
+    smart_free(treein->tree);
     treein->tree = NULL;
     codetree_close(treein);
     return 0;

@@ -141,7 +141,7 @@ static void append_escape(sl* list, const char* fn) {
 static void appendf_escape(sl* list, const char* fmt, const char* fn) {
     char* esc = shell_escape(fn);
     sl_appendf(list, fmt, esc);
-    free(esc);
+    smart_free(esc);
 }
 static void append_executable(sl* list, const char* fn, const char* me) {
     char* exec = find_executable(fn, me);
@@ -150,7 +150,7 @@ static void append_executable(sl* list, const char* fn, const char* me) {
         exit(-1);
     }
     sl_append_nocopy(list, shell_escape(exec));
-    free(exec);
+    smart_free(exec);
 }
 
 static int write_kmz(const augment_xylist_t* axy, const char* kmzfn,
@@ -186,11 +186,11 @@ static int write_kmz(const augment_xylist_t* axy, const char* kmzfn,
     logverb("Running:\n  %s\n", cmd);
     if (run_command_get_outputs(cmd, NULL, NULL)) {
         ERROR("pnmtopng failed");
-        free(cmd);
+        smart_free(cmd);
         sl_free2(cmdline);
         return -1;
     }
-    free(cmd);
+    smart_free(cmd);
 
     basekmlfn       = "doc.kml";
     basewarpedpngfn = "warped.png";
@@ -200,7 +200,7 @@ static int write_kmz(const augment_xylist_t* axy, const char* kmzfn,
     assert(axy->wcsfn);
     wcsbase = basename_safe(axy->wcsfn);
     sl_appendf(tempfiles, "%s/%s", tmpdir, wcsbase);
-    free(wcsbase);
+    smart_free(wcsbase);
 
     logverb("Trying to run wcs2kml to generate KMZ output.\n");
     sl_appendf(cmdline, "cp %s %s; cd %s; ", axy->wcsfn, tmpdir, tmpdir);
@@ -217,11 +217,11 @@ static int write_kmz(const augment_xylist_t* axy, const char* kmzfn,
     logverb("Running:\n  %s\n", cmd);
     if (run_command_get_outputs(cmd, NULL, NULL)) {
         ERROR("wcs2kml failed");
-        free(cmd);
+        smart_free(cmd);
         sl_free2(cmdline);
         return -1;
     }
-    free(cmd);
+    smart_free(cmd);
 
     sl_append(cmdline, "zip");
     sl_append(cmdline, "-j"); // no paths, just filenames
@@ -242,11 +242,11 @@ static int write_kmz(const augment_xylist_t* axy, const char* kmzfn,
     logverb("Running:\n  %s\n", cmd);
     if (run_command_get_outputs(cmd, NULL, NULL)) {
         ERROR("zip failed");
-        free(cmd);
+        smart_free(cmd);
         sl_free2(cmdline);
         return -1;
     }
-    free(cmd);
+    smart_free(cmd);
     sl_free2(cmdline);
     return 0;
 }
@@ -332,7 +332,7 @@ static int plot_source_overlay(augment_xylist_t* axy, const char* me,
         free(cmd);
         return -1;
     }
-    free(cmd);
+    smart_free(cmd);
     return 0;
 }
 
@@ -439,7 +439,7 @@ static int plot_index_overlay(augment_xylist_t* axy, const char* me,
         ERROR("Plotting commands %s; exiting.", (ctrlc ? "were cancelled" : "failed"));
         return -1;
     }
-    free(cmd);
+    smart_free(cmd);
     return 0;
 }
 
@@ -490,7 +490,7 @@ static int plot_annotations(augment_xylist_t* axy, const char* me, anbool verbos
         ERROR("plot-constellations failed");
         return -1;
     }
-    free(cmd);
+    smart_free(cmd);
     if (lines && sl_size(lines)) {
         int i;
         if (strlen(sl_get(lines, 0))) {
@@ -519,7 +519,7 @@ static void run_engine(sl* engineargs) {
         ERROR("engine failed.  Command that failed was:\n  %s", cmd);
         exit(-1);
     }
-    free(cmd);
+    smart_free(cmd);
     fflush(NULL);
 }
 
@@ -1042,10 +1042,10 @@ int main_solve_field(int argc, char** args) {
                   starts_with(infile, "ftp://")));
 
         if (outdir)
-            basedir = strdup(outdir);
+            basedir = smart_strdup(outdir);
         else {
             if (isurl)
-                basedir = strdup(".");
+                basedir = smart_strdup(".");
             else
                 basedir = dirname_safe(infile);
         }
@@ -1141,8 +1141,8 @@ int main_solve_field(int argc, char** args) {
             axy->solvedfn = axy->solvedinfn;
         }
 
-        free(basedir);
-        free(basefile);
+        smart_free(basedir);
+        smart_free(basefile);
 
         if (skip_solved) {
             char* tocheck[] = { axy->solvedinfn, axy->solvedfn };
@@ -1238,7 +1238,7 @@ int main_solve_field(int argc, char** args) {
                 exit(-1);
             }
             sl_remove_all(cmdline);
-            free(cmd);
+            smart_free(cmd);
 
             infile = downloadfn;
         }
@@ -1260,7 +1260,7 @@ int main_solve_field(int argc, char** args) {
             logverb(isxyls ? "xyls\n" : "image\n");
             if (!isxyls)
                 logverb("  (not xyls because: %s)\n", reason);
-            free(reason);
+            smart_free(reason);
             fflush(NULL);
 
             if (isxyls)
@@ -1291,7 +1291,7 @@ int main_solve_field(int argc, char** args) {
         if (makeplots) {
             // Check that the plotting executables were built...
             char* exec = find_executable("plotxy", me);
-            free(exec);
+            smart_free(exec);
             if (!exec) {
                 logmsg("Couldn't find \"plotxy\" executable - maybe you didn't build the plotting programs?\n");
                 logmsg("Disabling plots.\n");
@@ -1323,13 +1323,13 @@ int main_solve_field(int argc, char** args) {
 
         // clean up and move on to the next file.
     nextfile:        
-        free(base);
+        smart_free(base);
         sl_free2(cmdline);
 
         if (!engine_batch) {
-            free(axy->fitsimgfn);
-            free(axy->solvedinfn);
-            free(bgfn);
+            smart_free(axy->fitsimgfn);
+            smart_free(axy->solvedinfn);
+            smart_free(bgfn);
             // erm.
             if (axy->verifywcs != allaxy->verifywcs)
                 sl_free2(axy->verifywcs);
@@ -1354,8 +1354,8 @@ int main_solve_field(int argc, char** args) {
             errors_clear_stack();
             logmsg("\n");
 
-            free(axy->fitsimgfn);
-            free(axy->solvedinfn);
+            smart_free(axy->fitsimgfn);
+            smart_free(axy->solvedinfn);
             // erm.
             if (axy->verifywcs != allaxy->verifywcs)
                 sl_free2(axy->verifywcs);
@@ -1374,7 +1374,7 @@ int main_solve_field(int argc, char** args) {
     sl_free2(tempfiles2);
     sl_free2(tempdirs);
     sl_free2(engineargs);
-    free(me);
+    smart_free(me);
     augment_xylist_free_contents(allaxy);
 
     return 0;

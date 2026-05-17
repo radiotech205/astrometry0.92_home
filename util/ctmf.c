@@ -370,8 +370,8 @@ static void ctmf_helper(
     _mm_free(h_coarse);
     _mm_free(h_fine);
 #else
-    free(h_coarse);
-    free(h_fine);
+    smart_free(h_coarse);
+    smart_free(h_fine);
 #endif
 }
 

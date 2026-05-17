@@ -28,15 +28,16 @@
 #include "quad-utils.h"
 #include "quad-builder.h"
 #include "allquads.h"
-
+#include "memory.h"
 allquads_t* allquads_init() {
-    allquads_t* aq = calloc(1, sizeof(allquads_t));
+    allquads_t* aq = smart_calloc(1, sizeof(allquads_t));
+    if(!aq) return NULL;
     aq->dimquads = 4;
     return aq;
 }
 
 void allquads_free(allquads_t* aq) {
-    free(aq);
+    smart_free(aq);
 }
 
 static void add_quad(quadbuilder_t* qb, unsigned int* quad, void* token) {
@@ -99,10 +100,12 @@ int allquads_create_quads(allquads_t* aq) {
 
     if (!qb->check_scale_high) {
         int* inds;
-        inds = malloc(N * sizeof(int));
+        inds = smart_malloc(N * sizeof(int));
+        if(!inds)   return 0;
         for (i=0; i<N; i++)
             inds[i] = i;
-        xyz = malloc(3 * N * sizeof(double));
+        xyz = smart_malloc(3 * N * sizeof(double));
+        if(!xyz)   return 0;
         kdtree_copy_data_double(aq->starkd->tree, 0, N, xyz);
 
         qb->starxyz = xyz;
@@ -111,8 +114,8 @@ int allquads_create_quads(allquads_t* aq) {
 
         quadbuilder_create(qb);
 
-        free(xyz);
-        free(inds);
+        smart_free(xyz);
+        smart_free(inds);
     } else {
         int nq;
         int lastgrass = 0;
@@ -159,8 +162,8 @@ int allquads_create_quads(allquads_t* aq) {
             quadbuilder_create(qb);
 
             logverb("Star %i of %i: wrote %i quads for this star, total %i so far.\n", i+1, N, aq->quads->numquads - nq, aq->quads->numquads);
-            free(inds);
-            free(xyz);
+            smart_free(inds);
+            smart_free(xyz);
         }
         //
         //free(xyz);

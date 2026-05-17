@@ -19,7 +19,7 @@
 #include "errors.h"
 #include "gslutils.h"
 #include "sip-utils.h"
-
+#include "memory.h"
 int fit_sip_wcs_2(const double* starxyz,
                   const double* fieldxy,
                   const double* weights,
@@ -712,8 +712,8 @@ int fit_tan_wcs_solve(const double* starxyz,
     }
 
     // -allocate and fill "p" and "f" arrays. ("projected" and "field")
-    p = malloc(N * 2 * sizeof(double));
-    f = malloc(N * 2 * sizeof(double));
+    p = smart_malloc(N * 2 * sizeof(double));
+    f = smart_malloc(N * 2 * sizeof(double));
 
     // -get field center-of-mass
     totalw = 0.0;
@@ -859,8 +859,8 @@ int fit_tan_wcs_solve(const double* starxyz,
     }
 
     if (p_scale) *p_scale = scale;
-    free(p);
-    free(f);
+    smart_free(p);
+    smart_free(f);
     return 0;
 }
 

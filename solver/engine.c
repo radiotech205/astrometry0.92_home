@@ -42,7 +42,7 @@
 #include "sip-utils.h"
 #include "multiindex.h"
 #include "indexset.h"
-
+#include "memory.h"
 void engine_add_search_path(engine_t* engine, const char* path) {
     sl_append(engine->index_paths, path);
 }
@@ -55,7 +55,7 @@ char* engine_find_index(engine_t* engine, const char* name) {
         if (j == -1)
             if (strlen(name) && name[0] == '/') {
                 // try as an absolute filename.
-                path = strdup(name);
+                path = smart_strdup(name);
             } else {
                 continue;
             }
@@ -65,7 +65,7 @@ char* engine_find_index(engine_t* engine, const char* name) {
         logverb("Trying path %s...\n", path);
         if (index_is_file_index(path))
             return path;
-        free(path);
+        smart_free(path);
     }
     return NULL;
 }
@@ -99,9 +99,10 @@ int engine_autoindex_search_paths(engine_t* engine) {
             }
             name = de->d_name;
             asprintf_safe(&fullpath, "%s/%s", path, name);
+            fprintf(stderr, "DEBUG: path='%s', name='%s'\n", path ? path : "NULL", name ? name : "NULL");
             if (path_is_dir(fullpath)) {
                 logverb("Skipping directory %s\n", fullpath);
-                free(fullpath);
+                smart_free(fullpath);
                 continue;
             }
 
@@ -111,11 +112,11 @@ int engine_autoindex_search_paths(engine_t* engine) {
             err = errors_stop_logging_to_string(": ");
             if (!ok) {
                 logverb("File is not an index: %s\n", err);
-                free(err);
-                free(fullpath);
+                smart_free(err);
+                smart_free(fullpath);
                 continue;
             }
-            free(err);
+            smart_free(err);
 
             sl_insert_sorted_nocopy(tryinds, fullpath);
         }
@@ -175,7 +176,7 @@ int engine_add_index(engine_t* engine, char* path) {
     char* quadpath = index_get_quad_filename(path);
     char* base = basename_safe(quadpath);
     double t0;
-    free(quadpath);
+    smart_free(quadpath);
 
     // check that an index with the same filename hasn't already been added.
     for (k=0; k<pl_size(engine->indexes); k++) {
@@ -183,14 +184,14 @@ int engine_add_index(engine_t* engine, char* path) {
         // ind->indexname is a path to the quad filename; strip off directory component.
         char* mbase = basename_safe(ind->indexname);
         anbool eq = streq(base, mbase);
-        free(mbase);
+        smart_free(mbase);
         if (eq) {
             logmsg("Warning: we've already seen an index with the same name: \"%s\".  Adding it anyway...\n", ind->indexname);
             //free(base);
             //return 0;
         }
     }
-    free(base);
+    smart_free(base);
 
     t0 = timenow();
     ind = index_load(path, engine->inparallel ? 0 : INDEX_ONLY_LOAD_METADATA, NULL);
@@ -222,8 +223,8 @@ static void add_index_to_onefield(engine_t* engine, onefield_t* bp,
                 ERROR("Failed to load index %s\n", index->indexname);
                 return;
             }
-            free(iname);
-            free(ifn);
+            smart_free(iname);
+            smart_free(ifn);
         }
         onefield_add_loaded_index(bp, index);
     } else {
@@ -327,7 +328,7 @@ int engine_parse_config_file_stream(engine_t* engine, FILE* fconf) {
         }
         if (engine_add_index(engine, path))
             logmsg("Failed to add index \"%s\".\n", path);
-        free(path);
+        smart_free(path);
     }
 
     for (i=0; i<sl_size(indexsets); i++) {
@@ -353,7 +354,7 @@ int engine_parse_config_file_stream(engine_t* engine, FILE* fconf) {
                     indx->indexfn = path;
                     break;
                 }
-                free(path);
+                smart_free(path);
             }
             if (!indx->indexfn) {
                 logverb("Did not find file for index name \"%s\"\n", indx->indexname);
@@ -395,7 +396,7 @@ int engine_parse_config_file_stream(engine_t* engine, FILE* fconf) {
         {
             char* s = sl_join(words, " / ");
             logverb("Trying multi-index %s + %s...\n", skdt, s);
-            free(s);
+            smart_free(s);
         }
         skdtpath = engine_find_index(engine, skdt);
         if (!skdtpath) {
@@ -413,14 +414,14 @@ int engine_parse_config_file_stream(engine_t* engine, FILE* fconf) {
             }
             sl_set(words, j, path);
             // sl_set makes a copy.
-            free(path);
+            smart_free(path);
         }
 
         mi = multiindex_open(skdtpath, words, 0);
         if (!mi) {
             char* s = sl_join(words, " / ");
             logerr("Failed to open multiindex: %s + %s\n", skdt, s);
-            free(s);
+            smart_free(s);
             rtn = -1;
             goto done;
         }
@@ -433,8 +434,8 @@ int engine_parse_config_file_stream(engine_t* engine, FILE* fconf) {
         }
         pl_append(engine->free_mindexes, mi);
         sl_free2(words);
-        free(skdt);
-        free(skdtpath);
+        smart_free(skdt);
+        smart_free(skdtpath);
     }
 
     if (auto_index) {
@@ -449,7 +450,7 @@ int engine_parse_config_file_stream(engine_t* engine, FILE* fconf) {
 }
 
 static job_t* job_new() {
-    job_t* job = calloc(1, sizeof(job_t));
+    job_t* job = smart_calloc(1, sizeof(job_t));
     if (!job) {
         SYSERROR("Failed to allocate a new job_t.");
         return NULL;
@@ -464,7 +465,7 @@ void job_free(job_t* job) {
         return;
     dl_free(job->scales);
     il_free(job->depths);
-    free(job);
+    smart_free(job);
 }
 
 static double job_imagew(job_t* job) {
@@ -704,26 +705,26 @@ static anbool parse_job_from_qfits_header(const qfits_header* hdr, job_t* job) {
         sp->distractor_ratio = val;
 
     onefield_set_solvedout_file  (bp, fn=fits_get_long_string(hdr, "ANSOLVED"));
-    free(fn);
+    smart_free(fn);
     onefield_set_solvedin_file  (bp, fn=fits_get_long_string(hdr, "ANSOLVIN"));
-    free(fn);
+    smart_free(fn);
     onefield_set_match_file   (bp, fn=fits_get_long_string(hdr, "ANMATCH" ));
-    free(fn);
+    smart_free(fn);
     onefield_set_rdls_file    (bp, fn=fits_get_long_string(hdr, "ANRDLS"  ));
-    free(fn);
+    smart_free(fn);
     onefield_set_scamp_file   (bp, fn=fits_get_long_string(hdr, "ANSCAMP" ));
-    free(fn);
+    smart_free(fn);
     onefield_set_wcs_file     (bp, fn=fits_get_long_string(hdr, "ANWCS"   ));
-    free(fn);
+    smart_free(fn);
     onefield_set_corr_file    (bp, fn=fits_get_long_string(hdr, "ANCORR"  ));
-    free(fn);
+    smart_free(fn);
     onefield_set_cancel_file  (bp, fn=fits_get_long_string(hdr, "ANCANCEL"));
-    free(fn);
+    smart_free(fn);
 
     onefield_set_xcol(bp, fn=fits_get_dupstring(hdr, "ANXCOL"));
-    free(fn);
+    smart_free(fn);
     onefield_set_ycol(bp, fn=fits_get_dupstring(hdr, "ANYCOL"));
-    free(fn);
+    smart_free(fn);
 
     bp->timelimit = qfits_header_getint(hdr, "ANTLIM", 0);
     bp->cpulimit = qfits_header_getdouble(hdr, "ANCLIM", 0.0);
@@ -948,7 +949,8 @@ static anbool parse_job_from_qfits_header(const qfits_header* hdr, job_t* job) {
         parse_sip_coeffs(hdr, "AND", &dsip);
         if ((dsip.a_order > 1 && dsip.b_order > 1) ||
             (dsip.ap_order > 1 && dsip.bp_order > 1)) {
-            sp->predistort = malloc(sizeof(sip_t));
+            sp->predistort = smart_malloc(sizeof(sip_t));
+            if(!sp->predistort) return FALSE;
             memcpy(sp->predistort, &dsip, sizeof(sip_t));
         }
     } while (0);
@@ -971,7 +973,8 @@ static anbool parse_job_from_qfits_header(const qfits_header* hdr, job_t* job) {
 
 
 engine_t* engine_new() {
-    engine_t* engine = calloc(1, sizeof(engine_t));
+    engine_t* engine = smart_calloc(1, sizeof(engine_t));
+    if(!engine) return NULL;
     engine->index_paths = sl_new(10);
     engine->indexes = pl_new(16);
     engine->free_indexes = pl_new(16);
@@ -1016,7 +1019,7 @@ void engine_free(engine_t* engine) {
         il_free(engine->default_depths);
     if (engine->index_paths)
         sl_free2(engine->index_paths);
-    free(engine);
+    smart_free(engine);
 }
 
 job_t* engine_read_job_file(engine_t* engine, const char* jobfn) {

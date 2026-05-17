@@ -13,7 +13,7 @@
 #include "permutedsort.h"
 #include "quad-utils.h"
 #include "log.h"
-
+#include "memory.h"
 static int compare_n(const void* v1, const void* v2, int N) {
     const int* u1 = v1;
     const int* u2 = v2;
@@ -186,30 +186,33 @@ int main_test_solver2(int argc, char** args) {
 
     itemsize = 4*sizeof(int);
     Nwanted = sizeof(wanted4) / itemsize;
-    flatwanted = calloc(Nwanted, itemsize);
+    flatwanted = smart_calloc(Nwanted, itemsize);
+    if(!flatwanted) return 0;
     for (i=0; i<Nwanted; i++) {
         memcpy(flatwanted+i*4, wanted4[i], itemsize);
         //qsort(flatwanted+i*4, 2, sizeof(int), compare_ints_asc);
         //qsort(sorted+2, dimquad-2, sizeof(int), compare_ints_asc);
     }
     testit(flatwanted, Nwanted, 4, compare_quad, FALSE);
-    free(flatwanted);
+    smart_free(flatwanted);
 
     itemsize = 5*sizeof(int);
     Nwanted = sizeof(wanted5) / itemsize;
-    flatwanted = calloc(Nwanted, itemsize);
+    flatwanted = smart_calloc(Nwanted, itemsize);
+    if(!flatwanted) return 0;
     for (i=0; i<Nwanted; i++)
         memcpy(flatwanted+i*5, wanted5[i], itemsize);
     testit(flatwanted, Nwanted, 5, compare_quint, FALSE);
-    free(flatwanted);
+    smart_free(flatwanted);
 
     itemsize = 3*sizeof(int);
     Nwanted = sizeof(wanted3) / itemsize;
-    flatwanted = calloc(Nwanted, itemsize);
+    flatwanted = smart_calloc(Nwanted, itemsize);
+    if(!flatwanted) return 0;
     for (i=0; i<Nwanted; i++)
         memcpy(flatwanted+i*3, wanted3[i], itemsize);
     testit(flatwanted, Nwanted, 3, compare_tri, FALSE);
-    free(flatwanted);
+    smart_free(flatwanted);
 
     int wanted3b[][3] = {
         {0,1,3}, {1,0,3}, {2,0,3}, {0,2,3}, {1,2,3}, {2,1,3}, {4,2,3}, {4,2,3}, {0,1,4}, {1,0,4}, {0,1,4}, {1,0,4}, {2,0,4}, {0,2,4}, {3,0,4}, {0,3,4}, {1,2,4}, {2,1,4}, {1,3,4}, {3,1,4}, {0,5,4}, {5,0,4}, {5,1,4}, {1,5,4}, {5,2,0}, {2,5,0}, {2,5,1}, {5,2,1}, {5,2,3}, {5,2,3}, {5,2,4}, {5,2,4}, {3,5,4}, {5,3,4}, {3,5,4}, {5,3,4}, {1,0,5}, {0,1,5}, {0,6,4}, {6,0,4}, {0,6,5}, {6,0,5}, {6,1,4}, {1,6,4}, {6,1,5}, {1,6,5}, {6,2,0}, {2,6,0}, {2,6,1}, {6,2,1}, {2,6,3}, {2,6,3}, {2,6,4}, {6,2,4}, {2,6,4}, {6,2,4}, {6,2,5}, {6,2,5}, {6,3,0}, {3,6,0}, {3,6,1}, {6,3,1}, {3,6,4}, {3,6,4}, {3,6,5}, {3,6,5}, {4,6,5}, {4,6,5}
@@ -223,30 +226,33 @@ int main_test_solver2(int argc, char** args) {
 
     itemsize = 4*sizeof(int);
     Nwanted = sizeof(wanted4b) / itemsize;
-    flatwanted = calloc(Nwanted, itemsize);
+    flatwanted = smart_calloc(Nwanted, itemsize);
+    if(!flatwanted) return 0;
     for (i=0; i<Nwanted; i++) {
         memcpy(flatwanted+i*4, wanted4b[i], itemsize);
     }
     testit(flatwanted, Nwanted, 4, compare_quad, TRUE);
-    free(flatwanted);
+    smart_free(flatwanted);
 
     itemsize = 3*sizeof(int);
     Nwanted = sizeof(wanted3b) / itemsize;
-    flatwanted = calloc(Nwanted, itemsize);
+    flatwanted = smart_calloc(Nwanted, itemsize);
+    if(!flatwanted) return 0;
     for (i=0; i<Nwanted; i++) {
         memcpy(flatwanted+i*3, wanted3b[i], itemsize);
     }
     testit(flatwanted, Nwanted, 3, compare_tri, TRUE);
-    free(flatwanted);
+    smart_free(flatwanted);
 
     itemsize = 5*sizeof(int);
     Nwanted = sizeof(wanted5b) / itemsize;
-    flatwanted = calloc(Nwanted, itemsize);
+    flatwanted = smart_calloc(Nwanted, itemsize);
+    if(!flatwanted) return 0;
     for (i=0; i<Nwanted; i++) {
         memcpy(flatwanted+i*5, wanted5b[i], itemsize);
     }
     testit(flatwanted, Nwanted, 5, compare_quint, TRUE);
-    free(flatwanted);
+    smart_free(flatwanted);
 
 
     return 0;

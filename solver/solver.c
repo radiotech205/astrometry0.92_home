@@ -155,9 +155,9 @@ void solver_tweak2(solver_t* sp, MatchObj* mo, int order, sip_t* verifysip) {
         // set qc to the image center here?  or crpix?
         logverb("solver_tweak2(): setting Q2=%g; qc=(%g,%g)\n", Q2, qc[0], qc[1]);
     }
-
     // mo->refradec may be NULL at this point, so get it from refxyz instead...
-    refradec = malloc(3 * mo->nindex * sizeof(double));
+    refradec = smart_malloc(3 * mo->nindex * sizeof(double));
+    if(!refradec)   return;
     for (i=0; i<mo->nindex; i++)
         xyzarr2radecdegarr(mo->refxyz + i*3, refradec + i*2);
 
@@ -192,13 +192,13 @@ void solver_tweak2(solver_t* sp, MatchObj* mo, int order, sip_t* verifysip) {
                      &startsip, NULL, &theta, &odds,
                      sp->set_crpix ? sp->crpix : NULL,
                      &newodds, &besti, mo->testperm, startorder);
-    free(refradec);
+    smart_free(refradec);
 
     // FIXME -- update refxy?  Nobody uses it, right?
-    free(mo->refxy);
+    smart_free(mo->refxy);
     mo->refxy = NULL;
     // FIXME -- and testperm?
-    free(mo->testperm);
+    smart_free(mo->testperm);
     mo->testperm = NULL;
 
     if (mo->sip) {
@@ -206,8 +206,8 @@ void solver_tweak2(solver_t* sp, MatchObj* mo, int order, sip_t* verifysip) {
         memcpy(&(mo->wcstan), &(mo->sip->wcstan), sizeof(tan_t));
 
         // Plug in the new "theta" and "odds".
-        free(mo->theta);
-        free(mo->matchodds);
+        smart_free(mo->theta);
+        smart_free(mo->matchodds);
         mo->theta = theta;
         mo->matchodds = odds;
 
@@ -219,7 +219,7 @@ void solver_tweak2(solver_t* sp, MatchObj* mo, int order, sip_t* verifysip) {
         mo->ndistractor = nd;
         matchobj_compute_derived(mo);
     }
-    free(xy);
+    smart_free(xy);
 }
 
 void solver_log_params(const solver_t* sp) {
@@ -884,9 +884,10 @@ void solver_run(solver_t* solver) {
          каждой звезды, которые указывают, может ли эта звезда быть звездой C или D
          квада с AB в углах.
         */
-        int result;
+        int result = 0;
 //        pquads = usage_memory((size_t)numxy * (size_t)numxy * sizeof(pquad), &result);
-        pquads = usage_memory2((size_t)numxy * (size_t)numxy * sizeof(pquad), &result, solver_run);
+        //pquads = usage_memory2((size_t)numxy * (size_t)numxy * sizeof(pquad), &result, solver_run);
+        pquads = smart_malloc((size_t)numxy * (size_t)numxy * sizeof(pquad));
         if(!pquads || result)
             goto quitnow;
         memset(pquads, 0, (size_t)numxy * (size_t)numxy * sizeof(pquad));
@@ -924,14 +925,16 @@ void solver_run(solver_t* solver) {
                         debug("  bad scale for A=%i, B=%i\n", field[A], field[B]);
                         continue;
                     }
-                    int result;
+                    int result = 0;
 //                    pq->xy = usage_memory(numxy * 2 * sizeof(double), &result);
-                    pq->xy = usage_memory2(numxy * 2 * sizeof(double), &result, solver_run);
+                    //pq->xy = usage_memory2(numxy * 2 * sizeof(double), &result, solver_run);
+                    pq->xy = smart_malloc(numxy * 2 * sizeof(double));
                     if(!pq->xy || result)
                         goto quitnow;
 
                     //pq->inbox = usage_memory(numxy * sizeof(anbool), &result);
-                    pq->inbox = usage_memory2(numxy * sizeof(anbool), &result, solver_run);
+                    //pq->inbox = usage_memory2(numxy * sizeof(anbool), &result, solver_run);
+                    pq->inbox = smart_malloc(numxy * sizeof(anbool));
                     if(!pq->inbox || result)
                         goto quitnow;
 
@@ -1003,14 +1006,16 @@ void solver_run(solver_t* solver) {
                     continue;
                 }
                 // initialize the "inbox" array:
-                int result;
+                int result = 0;
                 //pq->xy = usage_memory(numxy * 2 * sizeof(double), &result);
-                pq->xy = usage_memory2(numxy * 2 * sizeof(double), &result, solver_run);
+                //pq->xy = usage_memory2(numxy * 2 * sizeof(double), &result, solver_run);
+                pq->xy = smart_malloc(numxy * 2 * sizeof(double));
                 if(!pq->xy || result)
                     goto quitnow;
 
                 //pq->inbox = usage_memory(numxy * sizeof(anbool), &result);
-                pq->inbox = usage_memory2(numxy * sizeof(anbool), &result, solver_run);
+                //pq->inbox = usage_memory2(numxy * sizeof(anbool), &result, solver_run);
+                pq->inbox = smart_malloc(numxy * sizeof(anbool));
                 if(!pq->inbox || result)
                     goto quitnow;
                 // -try all stars up to "newpoint"...
@@ -1120,15 +1125,15 @@ void solver_run(solver_t* solver) {
             pquad* pq = pquads + i;
 
             if(pq->inbox) {
-                free(pq->inbox);
+                smart_free(pq->inbox);
                 pq->inbox = NULL;
             }
             if(pq->xy) {
-                free(pq->xy);
+                smart_free(pq->xy);
                 pq->xy = NULL;
             }
         }
-        free(pquads);
+        smart_free(pquads);
     }
 }
 
@@ -1701,9 +1706,9 @@ static int solver_handle_hit(solver_t* sp, MatchObj* mo, sip_t* verifysip,
             }
         }
 
-        free(matchxy);
-        free(matchxyz);
-        free(weights);
+        smart_free(matchxy);
+        smart_free(matchxyz);
+        smart_free(weights);
 
     } else if (sp->do_tweak) {
         solver_tweak2(sp, mo, sp->tweak_aborder, verifysip);
@@ -1759,7 +1764,8 @@ static int solver_handle_hit(solver_t* sp, MatchObj* mo, sip_t* verifysip,
 }
 
 solver_t* solver_new() {
-    solver_t* solver = calloc(1, sizeof(solver_t));
+    solver_t* solver = smart_calloc(1, sizeof(solver_t));
+    if(!solver) return NULL;
     solver_set_default_values(solver);
     return solver;
 }
@@ -1803,5 +1809,5 @@ void solver_cleanup(solver_t* solver) {
 void solver_free(solver_t* solver) {
     if (!solver) return;
     solver_cleanup(solver);
-    free(solver);
+    smart_free(solver);
 }

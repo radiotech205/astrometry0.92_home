@@ -42,7 +42,7 @@
 #include "log.h"
 #include "anqfits.h"
 #include "mathutil.h"
-
+#include "memory.h"
 static void delete_existing_an_headers(qfits_header* hdr);
 
 void augment_xylist_init(augment_xylist_t* axy) {
@@ -573,14 +573,14 @@ static void append_executable(sl* list, const char* fn, const char* me) {
         char* binfn = NULL;
         asprintf_safe(&binfn, "../bin/%s", fn);
         exec = find_executable(binfn, me);
-        free(binfn);
+        smart_free(binfn);
     }
     if (!exec) {
         ERROR("Couldn't find executable \"%s\"", fn);
         exit(-1);
     }
     sl_append_nocopy(list, shell_escape(exec));
-    free(exec);
+    smart_free(exec);
 }
 
 static sl* backtick(sl* cmd, anbool verbose) {
@@ -589,10 +589,10 @@ static sl* backtick(sl* cmd, anbool verbose) {
     logverb("Running: %s\n", cmdstr);
     if (run_command_get_outputs(cmdstr, &lines, NULL)) {
         ERROR("Failed to run command: %s", cmdstr);
-        free(cmdstr);
+        smart_free(cmdstr);
         exit(-1);
     }
-    free(cmdstr);
+    smart_free(cmdstr);
     sl_remove_all(cmd);
     return lines;
 }
@@ -603,10 +603,10 @@ static void run(sl* cmd, anbool verbose) {
         logverb("Running: %s\n", cmdstr);
         if (run_command_get_outputs(cmdstr, NULL, NULL)) {
             ERROR("Failed to run command: %s", cmdstr);
-            free(cmdstr);
+            smart_free(cmdstr);
             exit(-1);
         }
-        free(cmdstr);
+        smart_free(cmdstr);
         sl_remove_all(cmd);
     } else {
         sl* lines = backtick(cmd, verbose);
@@ -857,7 +857,7 @@ int augment_xylist(augment_xylist_t* axy,
         }
 
         if (axy->keep_fitsimg) {
-            axy->fitsimgfn = strdup(fitsimgfn);
+            axy->fitsimgfn = smart_strdup(fitsimgfn);
             sl_remove_string(tempfiles, fitsimgfn);
         }
 

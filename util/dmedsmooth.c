@@ -11,7 +11,7 @@
 
 #include "os-features.h"
 #include "simplexy-common.h"
-
+#include "memory.h"
 /*
  * dmedsmooth.c
  *
@@ -39,9 +39,9 @@ int dmedsmooth_gridpoints(int nx, int halfbox, int* p_nxgrid, int** p_xgrid,
     // "xlo" are the (inclusive) lower-bounds
     // "xhi" are the (inclusive) upper-bounds
     // the grid cells may overlap.
-    *p_xgrid = xgrid = (int *) malloc((size_t)nxgrid * sizeof(int));
-    *p_xlo   = xlo   = (int *) malloc((size_t)nxgrid * sizeof(int));
-    *p_xhi   = xhi   = (int *) malloc((size_t)nxgrid * sizeof(int));
+    *p_xgrid = xgrid = (int *) smart_malloc((size_t)nxgrid * sizeof(int));
+    *p_xlo   = xlo   = (int *) smart_malloc((size_t)nxgrid * sizeof(int));
+    *p_xhi   = xhi   = (int *) smart_malloc((size_t)nxgrid * sizeof(int));
     xoff = (nx - 1 - (nxgrid - 3) * halfbox) / 2;
     for (i = 1; i < nxgrid - 1; i++)
         xgrid[i] = (i - 1) * halfbox + xoff;
@@ -90,10 +90,10 @@ int dmedsmooth_grid(const float* image,
      */
 
     // the median-filtered image (subsampled on a grid).
-    *p_grid = grid = (float *) malloc((size_t)(nxgrid * nygrid) *
+    *p_grid = grid = (float *) smart_malloc((size_t)(nxgrid * nygrid) *
                                       sizeof(float));
 
-    arr = (float *) malloc((size_t)((halfbox * 2 + 5) *
+    arr = (float *) smart_malloc((size_t)((halfbox * 2 + 5) *
                                     (halfbox * 2 + 5)) * sizeof(float));
 
     for (j=0; j<nygrid; j++) {

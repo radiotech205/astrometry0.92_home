@@ -23,7 +23,7 @@
 #include "mathutil.h"
 #include "verify.h"
 #include "fitsioutils.h"
-
+#include "memory.h"
 
 // Tweak debug plots?
 #define TWEAK_DEBUG_PLOTS 0
@@ -233,13 +233,14 @@ sip_t* tweak2(const double* fieldxy, int Nfield,
     else
         sipout = sip_create();
 
-    indexin = malloc(Nindex * sizeof(int));
-    indexpix = malloc(2 * Nindex * sizeof(double));
-    fieldsigma2s = malloc(Nfield * sizeof(double));
-    weights = malloc(Nfield * sizeof(double));
-    matchxyz = malloc(Nfield * 3 * sizeof(double));
-    matchxy = malloc(Nfield * 2 * sizeof(double));
-
+    indexin = smart_malloc(Nindex * sizeof(int));
+    indexpix = smart_malloc(2 * Nindex * sizeof(double));
+    fieldsigma2s = smart_malloc(Nfield * sizeof(double));
+    weights = smart_malloc(Nfield * sizeof(double));
+    matchxyz = smart_malloc(Nfield * 3 * sizeof(double));
+    matchxy = smart_malloc(Nfield * 2 * sizeof(double));
+    if(!indexin || !indexpix || !fieldsigma2s || !weights || !matchxyz || !matchxy)
+        return NULL;
     // FIXME --- hmmm, how do the annealing steps and iterating up to
     // higher orders interact?
 
@@ -276,9 +277,9 @@ sip_t* tweak2(const double* fieldxy, int Nfield,
 
             // clean up from last round (we do it here so that they're
             // valid when we leave the loop)
-            free(theta);
-            free(odds);
-            free(refperm);
+            smart_free(theta);
+            smart_free(odds);
+            smart_free(refperm);
 
             // Anneal
             gamma = pow(0.9, step);
@@ -312,12 +313,12 @@ sip_t* tweak2(const double* fieldxy, int Nfield,
 
             if (Nin == 0) {
                 sip_free(sipout);
-                free(matchxy);
-                free(matchxyz);
-                free(weights);
-                free(fieldsigma2s);
-                free(indexpix);
-                free(indexin);
+                smart_free(matchxy);
+                smart_free(matchxyz);
+                smart_free(weights);
+                smart_free(fieldsigma2s);
+                smart_free(indexpix);
+                smart_free(indexin);
                 return NULL;
             }
 
@@ -426,14 +427,14 @@ sip_t* tweak2(const double* fieldxy, int Nfield,
 
             if (Nmatch < 2) {
                 logverb("No matches -- aborting tweak attempt\n");
-                free(theta);
+                smart_free(theta);
                 sip_free(sipout);
-                free(matchxy);
-                free(matchxyz);
-                free(weights);
-                free(fieldsigma2s);
-                free(indexpix);
-                free(indexin);
+                smart_free(matchxy);
+                smart_free(matchxyz);
+                smart_free(weights);
+                smart_free(fieldsigma2s);
+                smart_free(indexpix);
+                smart_free(indexin);
                 return NULL;
             }
 
@@ -489,9 +490,9 @@ sip_t* tweak2(const double* fieldxy, int Nfield,
         int nmatch, nconf, ndist;
         double pix2;
 
-        free(theta);
-        free(odds);
-        free(refperm);
+        smart_free(theta);
+        smart_free(odds);
+        smart_free(refperm);
         gamma = 1.0;
         // Project reference sources into pixel space; keep the ones inside image bounds.
         Nin = 0;
@@ -543,11 +544,10 @@ sip_t* tweak2(const double* fieldxy, int Nfield,
                              sipout->wcstan.crpix, testperm, qc);
         }
     }
-
-
     if (newtheta) {
         // undo the "indexpix" inside-image-bounds cut.
-        (*newtheta) = malloc(Nfield * sizeof(int));
+        (*newtheta) = smart_malloc(Nfield * sizeof(int));
+        if(!(*newtheta))    return NULL;
         for (i=0; i<Nfield; i++) {
             int nt;
             if (theta[i] < 0)
@@ -557,13 +557,13 @@ sip_t* tweak2(const double* fieldxy, int Nfield,
             (*newtheta)[i] = nt;
         }
     }
-    free(theta);
-    free(refperm);
+    smart_free(theta);
+    smart_free(refperm);
 
     if (newodds)
         *newodds = odds;
     else
-        free(odds);
+        smart_free(odds);
 
     logverb("Tweak2: final WCS:\n");
     if (log_get_level() >= LOG_VERB)
@@ -574,12 +574,12 @@ sip_t* tweak2(const double* fieldxy, int Nfield,
     if (p_besti)
         *p_besti = besti;
 
-    free(indexin);
-    free(indexpix);
-    free(fieldsigma2s);
-    free(weights);
-    free(matchxyz);
-    free(matchxy);
+    smart_free(indexin);
+    smart_free(indexpix);
+    smart_free(fieldsigma2s);
+    smart_free(weights);
+    smart_free(matchxyz);
+    smart_free(matchxy);
 
     return sipout;
 }

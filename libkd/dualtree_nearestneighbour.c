@@ -12,7 +12,7 @@
 #include "dualtree_nearestneighbour.h"
 #include "dualtree.h"
 #include "mathutil.h"
-
+#include "memory.h"
 struct rs_params {
     kdtree_t* xtree;
     kdtree_t* ytree;
@@ -66,7 +66,10 @@ void dualtree_nearestneighbour(kdtree_t* xtree, kdtree_t* ytree, double maxdist2
     params.count_in_range = NULL;
     if (count_in_range) {
         if (!(*count_in_range)) {
-            *count_in_range = (int*)calloc(NY, sizeof(int));
+            //*count_in_range = (int*)calloc(NY, sizeof(int));
+            *count_in_range = smart_malloc(NY * sizeof(int));
+            if(!(*count_in_range )) return;
+            memset(*count_in_range, 0, NY * sizeof(int));
         }
         params.count_in_range = *count_in_range;
     }
@@ -74,8 +77,11 @@ void dualtree_nearestneighbour(kdtree_t* xtree, kdtree_t* ytree, double maxdist2
     // were we given a d2 array?
     if (*nearest_d2)
         params.nearest_d2 = *nearest_d2;
-    else
-        params.nearest_d2 = malloc(NY * sizeof(double));
+    else {
+        //params.nearest_d2 = malloc(NY * sizeof(double));
+        params.nearest_d2  = smart_malloc(NY * sizeof(double));
+        if(!params.nearest_d2)  return;
+    }
 
     if (maxdist2 == 0.0)
         maxdist2 = LARGE_VAL;
@@ -85,13 +91,18 @@ void dualtree_nearestneighbour(kdtree_t* xtree, kdtree_t* ytree, double maxdist2
     // were we given an ind array?
     if (*nearest_ind)
         params.nearest_ind = *nearest_ind;
-    else
-        params.nearest_ind = malloc(NY * sizeof(int));
+    else {
+        //params.nearest_ind = malloc(NY * sizeof(int));
+        params.nearest_ind = smart_malloc(NY * sizeof(int));
+        if(!params.nearest_ind) return;
+    }
     for (i=0; i<NY; i++)
         params.nearest_ind[i] = -1;
 
     NNY = kdtree_nnodes(ytree);
-    params.node_nearest_d2 = malloc(NNY * sizeof(double));
+    //params.node_nearest_d2 = malloc(NNY * sizeof(double));
+    params.node_nearest_d2 = smart_malloc(NNY * sizeof(double));
+    if(!params.node_nearest_d2) return;
     for (i=0; i<NNY; i++)
         params.node_nearest_d2[i] = maxdist2;
     
@@ -100,7 +111,7 @@ void dualtree_nearestneighbour(kdtree_t* xtree, kdtree_t* ytree, double maxdist2
     // Return array addresses
     *nearest_d2 = params.nearest_d2;
     *nearest_ind = params.nearest_ind;
-    free(params.node_nearest_d2);
+    smart_free(params.node_nearest_d2);
 }
 
 static anbool rs_within_range(void* vparams,

@@ -394,9 +394,10 @@ kdtree_t* kdtree_new(int N, int D, int Nleaf) {
     maxlevel = kdtree_compute_levels(N, Nleaf);
     //kd = CALLOC(1, sizeof(kdtree_t));
 
-    int result;
+    int result = 0;
     //kd = usage_memory(sizeof(kdtree_t), &result);
-    kd = usage_memory2(sizeof(kdtree_t), &result, kdtree_new);
+    //kd = usage_memory2(sizeof(kdtree_t), &result, kdtree_new);
+    kd = smart_malloc(sizeof(kdtree_t));
     if(!kd || result)   return NULL;
     memset(kd, 0, sizeof(kdtree_t));
 
@@ -414,10 +415,14 @@ kdtree_t* kdtree_new(int N, int D, int Nleaf) {
 void kdtree_set_limits(kdtree_t* kd, double* low, double* high) {
     int D = kd->ndim;
     if (!kd->minval) {
-        kd->minval = MALLOC(D * sizeof(double));
+        //kd->minval = MALLOC(D * sizeof(double));
+        kd->minval =smart_malloc(D * sizeof(double));
+        if(!kd->minval) return;
     }
     if (!kd->maxval) {
-        kd->maxval = MALLOC(D * sizeof(double));
+        //kd->maxval = MALLOC(D * sizeof(double));
+        kd->maxval =smart_malloc(D * sizeof(double));
+        if(!kd->maxval) return;
     }
     memcpy(kd->minval, low,  D * sizeof(double));
     memcpy(kd->maxval, high, D * sizeof(double));

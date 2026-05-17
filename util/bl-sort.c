@@ -131,9 +131,9 @@ static void bl_sort_rec(bl* list, void* pivot,
     }
     // note, these are supposed to be "free", not "bl_free"; we've stolen
     // the blocks, we're just freeing the headers.
-    free(less);
-    free(equal);
-    free(greater);
+    smart_free(less);
+    smart_free(equal);
+    smart_free(greater);
 }
 
 static void bl_sort_with_userdata(bl* list,

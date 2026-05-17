@@ -13,6 +13,7 @@
 #include "mathutil.h"
 #include "pnpoly.h"
 #include "an-bool.h"
+#include "memory.h"
 /* Size of the line buffer */
 #define BUFSIZE 1000
 
@@ -259,8 +260,8 @@ void fill_maps(char *minmap, char *maxmap, uint hpx, uint Nside,
     anbool done = FALSE;
 	
     /* Bitmap we'll use to keep from revisiting the same healpixes */ 
-    char *visited = malloc(2 * Nside * Nside * sizeof(char));
-	
+    char *visited = smart_malloc(2 * Nside * Nside * sizeof(char));
+    if(!visited)    return;
     /* Store the head of the queue (actually a LIFO) of healpixes to examine */
     struct ll_node *queue = NULL;
     double thishpx_coords[3];
@@ -310,7 +311,8 @@ void fill_maps(char *minmap, char *maxmap, uint hpx, uint Nside,
 			
                 if (!(visited[neighbours[i] / 8] & (1 << (neighbours[i] % 8))))
                     {
-                        struct ll_node *newnode = malloc(sizeof(struct ll_node));
+                        struct ll_node *newnode = smart_malloc(sizeof(struct ll_node));
+                        if(!newnode)    return;
                         newnode->next = queue;
                         newnode->data = neighbours[i];
                         queue = newnode;
@@ -327,7 +329,7 @@ void fill_maps(char *minmap, char *maxmap, uint hpx, uint Nside,
             {
                 struct ll_node *newhead = queue->next;
                 hpx = queue->data;
-                free(queue);
+                smart_free(queue);
                 queue = newhead;
             }
         else {
@@ -339,7 +341,7 @@ void fill_maps(char *minmap, char *maxmap, uint hpx, uint Nside,
         }
     } while (!done);
 	
-    free(visited);
+    smart_free(visited);
 }
 
 static void print_help_catalog_analysis(FILE *f, char *name)
@@ -356,7 +358,8 @@ int main_catalog_analysis(int argc, char **argv)
     rect_field curfield;
     int filled_min = 0, filled_max = 0;
     char *hpmap_min, *hpmap_max;
-    char *buf = malloc(BUFSIZE * sizeof(char));
+    char *buf = smart_malloc(BUFSIZE * sizeof(char));
+    if(!buf)    return 0;
     int ich, i;
     int Nside = -1;
     uint fields;
@@ -382,7 +385,7 @@ int main_catalog_analysis(int argc, char **argv)
                             fprintf(stderr, "Error: -I requires argument");
                             exit(1);
                         }
-                    infilename = strdup(optarg);
+                    infilename = smart_strdup(optarg);
                     break;
 		}
 	}
@@ -412,8 +415,8 @@ int main_catalog_analysis(int argc, char **argv)
         input = stdin;
     }
     /* We could get away with allocating ceil(2/3 * Nside * Nside) */
-    hpmap_min = malloc(2 * Nside * Nside * sizeof(char));
-    hpmap_max = malloc(2 * Nside * Nside * sizeof(char));
+    hpmap_min = smart_malloc(2 * Nside * Nside * sizeof(char));
+    hpmap_max = smart_malloc(2 * Nside * Nside * sizeof(char));
 	
     if (hpmap_min == NULL || hpmap_max == NULL)
 	{
@@ -425,7 +428,8 @@ int main_catalog_analysis(int argc, char **argv)
         hpmap_max[i] = 0;
     }
 	
-    curfield.corners = malloc(3 * 4 * sizeof(double));
+    curfield.corners = smart_malloc(3 * 4 * sizeof(double));
+    if(!curfield.corners)   return 0;
     fields = 0;
     while (fgets(buf, BUFSIZE, input) != NULL)
 	{

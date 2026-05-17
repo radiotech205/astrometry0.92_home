@@ -15,7 +15,7 @@
 #include "ioutils.h"
 #include "errors.h"
 #include "an-endian.h"
-
+#include "memory.h"
 #define CHUNK_QUADS 0
 
 static fitsbin_chunk_t* quads_chunk(quadfile_t* qf) {
@@ -53,7 +53,7 @@ static int callback_read_header(fitsbin_t* fb, fitsbin_chunk_t* chunk) {
 static quadfile_t* new_quadfile(const char* fn, anqfits_t* fits, anbool writing) {
     quadfile_t* qf;
     fitsbin_chunk_t chunk;
-    qf = calloc(1, sizeof(quadfile_t));
+    qf = smart_calloc(1, sizeof(quadfile_t));
     if (!qf) {
         SYSERROR("Couldn't malloc a quadfile struct");
         return NULL;
@@ -170,7 +170,7 @@ int quadfile_close(quadfile_t* qf) {
     int rtn;
     if (!qf) return 0;
     rtn = fitsbin_close(qf->fb);
-    free(qf);
+    smart_free(qf);
     return rtn;
 }
 

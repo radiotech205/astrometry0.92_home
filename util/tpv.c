@@ -12,7 +12,7 @@
 #include "tpv.h"
 #include "starutil.h"
 #include "mathutil.h"
-
+#include "memory.h"
 /*******************************
 
  NOTE, this does not work yet!!!
@@ -71,7 +71,7 @@ double tpv_imageh(tpv_t* tpv) {
     return tpv->wcstan.imageh;
 }
 tpv_t* tpv_create() {
-    tpv_t* tpv = calloc(1, sizeof(tpv_t));
+    tpv_t* tpv = smart_calloc(1, sizeof(tpv_t));
 
     tpv->wcstan.cd[0][0] = 1;
     tpv->wcstan.cd[0][1] = 0;
@@ -82,7 +82,7 @@ tpv_t* tpv_create() {
 }
 
 void tpv_free(tpv_t* tpv) {
-    free(tpv);
+    smart_free(tpv);
 }
 
 void tpv_copy(tpv_t* dest, const tpv_t* src) {

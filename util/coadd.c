@@ -11,7 +11,7 @@
 #include "log.h"
 #include "resample.h"
 #include "os-features.h"
-
+#include "memory.h"
 coadd_t* coadd_new_from_wcs(anwcs_t* wcs) {
     int W,H;
     coadd_t* co;
@@ -26,9 +26,11 @@ coadd_t* coadd_new_from_wcs(anwcs_t* wcs) {
 }
 
 coadd_t* coadd_new(int W, int H) {
-    coadd_t* ca = calloc(1, sizeof(coadd_t));
-    ca->img = calloc((size_t)W * (size_t)H, sizeof(number));
-    ca->weight = calloc((size_t)W * (size_t)H, sizeof(number));
+    coadd_t* ca = smart_calloc(1, sizeof(coadd_t));
+    if(!ca) return NULL;
+    ca->img = smart_calloc((size_t)W * (size_t)H, sizeof(number));
+    ca->weight = smart_calloc((size_t)W * (size_t)H, sizeof(number));
+    if(!ca->img || !ca->weight) return NULL;
     ca->W = W;
     ca->H = H;
     ca->resample_func = nearest_resample_f;
@@ -36,7 +38,8 @@ coadd_t* coadd_new(int W, int H) {
 }
 
 void coadd_set_lanczos(coadd_t* co, int Lorder) {
-    lanczos_args_t* L = calloc(1, sizeof(lanczos_args_t));
+    lanczos_args_t* L = smart_calloc(1, sizeof(lanczos_args_t));
+    if(!L)  return;
     L->weighted = 0;
     L->order = Lorder;
     co->resample_token = L;
@@ -157,9 +160,10 @@ int coadd_add_image(coadd_t* ca, const number* img,
 number* coadd_get_snapshot(coadd_t* co, number* outimg,
                            number badpix) {
     int i;
-    if (!outimg)
-	outimg = calloc((size_t)co->W * (size_t)co->H, sizeof(number));
-
+    if (!outimg) {
+        outimg = smart_calloc((size_t)co->W * (size_t)co->H, sizeof(number));
+        if(!outimg) return NULL;
+    }
     for (i=0; i<(co->W * co->H); i++) {
         if (co->weight[i] == 0)
             outimg[i] = badpix;
@@ -182,15 +186,15 @@ void coadd_divide_by_weight(coadd_t* ca, number badpix) {
 }
 
 void coadd_free(coadd_t* ca) {
-    free(ca->img);
-    free(ca->weight);
-    free(ca);
+    smart_free(ca->img);
+    smart_free(ca->weight);
+    smart_free(ca);
 }
 
 number* coadd_create_weight_image_from_range(const number* img, int W, int H,
                                              number lowval, number highval) {
     int i;
-    number* weight = malloc((size_t)W*(size_t)H*sizeof(number));
+    number* weight = smart_malloc((size_t)W*(size_t)H*sizeof(number));
     for (i=0; i<(W*H); i++) {
         if (img[i] <= lowval)
             weight[i] = 0;

@@ -12,14 +12,14 @@
 #include "mathutil.h"
 #include "keywords.h"
 #include "os-features.h"
-
+#include "memory.h"
 float* convolve_get_gaussian_kernel_f(double sigma, double nsigma, int* p_k0, int* p_NK) {
     int K0, NK, i;
     float* kernel;
 
     K0 = ceil(sigma * nsigma);
     NK = 2*K0 + 1;
-    kernel = malloc(NK * sizeof(float));
+    kernel = smart_malloc(NK * sizeof(float));
     for (i=0; i<NK; i++)
         kernel[i] = 1.0 / sqrt(2.0 * M_PI) / sigma *
             exp(-0.5 * square(i - K0) / square(sigma));
@@ -45,11 +45,15 @@ float* convolve_separable_weighted_f(const float* img, int W, int H,
     float* freeimg = NULL;
     int i, j, k;
 
-    if (!tempimg)
-        freeimg = tempimg = malloc((size_t)W * (size_t)H * sizeof(float));
+    if (!tempimg) {
+        freeimg = tempimg = smart_malloc((size_t)W * (size_t)H * sizeof(float));
+        if(!freeimg)    return NULL;
+    }
 
-    if (!outimg)
-        outimg = malloc((size_t)W * (size_t)H * sizeof(float));
+    if (!outimg) {
+        outimg = smart_malloc((size_t)W * (size_t)H * sizeof(float));
+        if(!outimg) return NULL;
+    }
 
     for (i=0; i<H; i++) {
         /* // DEBUG
@@ -110,7 +114,7 @@ float* convolve_separable_weighted_f(const float* img, int W, int H,
             outimg[i*W + j] = (sumw == 0.0) ? 0.0 : (sum / sumw);
         }
     }
-    free(freeimg);
+    smart_free(freeimg);
     return outimg;
 }
 

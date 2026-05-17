@@ -13,7 +13,7 @@
 #include "permutedsort.h"
 // for QSORT_R
 #include "os-features.h"
-
+#include "memory.h"
 #ifdef SIMPLEXY_REENTRANT
 
 // this is slower, because each call needs to malloc, but it is reentrant
@@ -36,8 +36,8 @@ static float* past_data = NULL;
 
 float dselip(unsigned long k, unsigned long n, float *arr) {
     if (n > high_water_mark) {
-        free(past_data);
-        past_data = malloc(sizeof(float) * n);
+        smart_free(past_data);
+        past_data = smart_malloc(sizeof(float) * n);
         high_water_mark = n;
         //printf("dselip watermark=%lu\n",n);
     }
@@ -47,7 +47,7 @@ float dselip(unsigned long k, unsigned long n, float *arr) {
 }
 
 void dselip_cleanup() {
-    free(past_data);
+    smart_free(past_data);
     past_data = NULL;
     high_water_mark = 0;
 }

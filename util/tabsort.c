@@ -15,7 +15,7 @@
 #include "fitsioutils.h"
 #include "permutedsort.h"
 #include "errors.h"
-
+#include "memory.h"
 int tabsort(const char* infn, const char* outfn, const char* colname,
             int descending) {
     FILE* fin;
@@ -90,21 +90,21 @@ int tabsort(const char* infn, const char* outfn, const char* colname,
         col = table->col + c;
         switch (col->atom_type) {
         case TFITS_BIN_TYPE_D:
-            data = realloc(data, table->nr * sizeof(double));
+            data = smart_realloc(data, table->nr * sizeof(double));
             if (descending)
                 sort_func = compare_doubles_desc;
             else
                 sort_func = compare_doubles_asc;
             break;
         case TFITS_BIN_TYPE_E:
-            data = realloc(data, table->nr * sizeof(float));
+            data = smart_realloc(data, table->nr * sizeof(float));
             if (descending)
                 sort_func = compare_floats_desc;
             else
                 sort_func = compare_floats_asc;
             break;
         case TFITS_BIN_TYPE_K:
-            data = realloc(data, table->nr * sizeof(int64_t));
+            data = smart_realloc(data, table->nr * sizeof(int64_t));
             if (descending)
                 sort_func = compare_int64_desc;
             else
@@ -159,7 +159,7 @@ int tabsort(const char* infn, const char* outfn, const char* colname,
 
         munmap(map, mapsize);
         map = NULL;
-        free(perm);
+        smart_free(perm);
         perm = NULL;
 
         if (fits_pad_file(fout)) {
@@ -169,7 +169,7 @@ int tabsort(const char* infn, const char* outfn, const char* colname,
 
         qfits_table_close(table);
     }
-    free(data);
+    smart_free(data);
 
     if (fclose(fout)) {
         SYSERROR("Error closing output file");
@@ -182,8 +182,8 @@ int tabsort(const char* infn, const char* outfn, const char* colname,
     return 0;
 
  bailout:
-    free(data);
-    free(perm);
+    smart_free(data);
+    smart_free(perm);
     if (fout)
         fclose(fout);
     fclose(fin);

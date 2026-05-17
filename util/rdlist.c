@@ -6,7 +6,7 @@
 #include <assert.h>
 
 #include "rdlist.h"
-
+#include "memory.h"
 void rd_getradec(const rd_t* f, int i, double* ra, double* dec) {
     assert(i < f->N);
     *ra  = f->ra [i];
@@ -39,23 +39,23 @@ int rd_n(rd_t* r) {
 
 void rd_free_data(rd_t* f) {
     if (!f) return;
-    free(f->ra);
-    free(f->dec);
+    smart_free(f->ra);
+    smart_free(f->dec);
 }
 
 void rd_free(rd_t* f) {
     rd_free_data(f);
-    free(f);
+    smart_free(f);
 }
 
 void rd_alloc_data(rd_t* f, int N) {
-    f->ra = malloc(N * sizeof(double));
-    f->dec = malloc(N * sizeof(double));
+    f->ra = smart_malloc(N * sizeof(double));
+    f->dec = smart_malloc(N * sizeof(double));
     f->N = N;
 }
 
 rd_t* rd_alloc(int N) {
-    rd_t* rd = calloc(1, sizeof(rd_t));
+    rd_t* rd = smart_calloc(1, sizeof(rd_t));
     rd_alloc_data(rd, N);
     return rd;
 }
@@ -138,7 +138,7 @@ rd_t* rdlist_read_field(rdlist_t* ls, rd_t* fld) {
         return NULL;
     }
     if (!fld) {
-        fld = calloc(1, sizeof(rd_t));
+        fld = smart_calloc(1, sizeof(rd_t));
     }
     fld->ra  = xy.x;
     fld->dec = xy.y;

@@ -13,7 +13,7 @@
 #include "simplexy-common.h"
 #include "log.h"
 #include "mathutil.h"
-
+#include "memory.h"
 /*
  * dobjects.c
  *
@@ -89,10 +89,10 @@ int dobjects(float *smooth,
     /* limit is the threshold at which to pay attention to a pixel */
     //limit = sigma * plim;
 
-    mask = malloc((size_t)nx * (size_t)ny);
+    mask = smart_malloc((size_t)nx * (size_t)ny);
     rtn = dmask(smooth, nx, ny, limit, dpsf, mask);
     if (rtn) {
-        free(mask);
+        smart_free(mask);
         return rtn;
     }
 
@@ -103,7 +103,7 @@ int dobjects(float *smooth,
     /* now run connected component analysis to find and number each blob */
     dfind2_u8(mask, nx, ny, objects, NULL);
 
-    free(mask);
+    smart_free(mask);
 
     return 1;
 } /* end dobjects */

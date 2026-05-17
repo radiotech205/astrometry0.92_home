@@ -23,7 +23,7 @@
 #include "anwcs.h"
 #include "resample.h"
 #include "mathutil.h"
-
+#include "memory.h"
 int resample_wcs_files(const char* infitsfn, int infitsext,
                        const char* inwcsfn, int inwcsext,
                        const char* outwcsfn, int outwcsext,
@@ -93,7 +93,7 @@ int resample_wcs_files(const char* infitsfn, int infitsext,
     logmsg("Input  image is %i x %i pixels.\n", inW, inH);
     logmsg("Output image is %i x %i pixels.\n", outW, outH);
 
-    outimg = calloc((size_t)outW * (size_t)outH, sizeof(float));
+    outimg = smart_calloc((size_t)outW * (size_t)outH, sizeof(float));
 
     if (resample_wcs(inwcs, inimg, inW, inH,
                      outwcs, outimg, outW, outH, 1, lorder)) {
@@ -141,7 +141,7 @@ int resample_wcs_files(const char* infitsfn, int infitsext,
         ERROR("Failed to write image to file \"%s\"", outfitsfn);
         return -1;
     }
-    free(outimg);
+    smart_free(outimg);
     qfits_header_destroy(hdr);
 
     anwcs_free(inwcs);
@@ -162,7 +162,7 @@ static anbool* find_overlap_grid(int B, int outW, int outH,
 
     BW = (int)ceil(outW / (float)B);
     BH = (int)ceil(outH / (float)B);
-    bib = calloc((size_t)BW*(size_t)BH, sizeof(anbool));
+    bib = smart_calloc((size_t)BW*(size_t)BH, sizeof(anbool));
     for (i=0; i<BH; i++) {
         for (j=0; j<BW; j++) {
             int x,y;
@@ -183,7 +183,7 @@ static anbool* find_overlap_grid(int B, int outW, int outH,
         }
     }
     // Grow the in-bounds area:
-    bib2 = calloc((size_t)BW*(size_t)BH, sizeof(anbool));
+    bib2 = smart_calloc((size_t)BW*(size_t)BH, sizeof(anbool));
     for (i=0; i<BH; i++)
         for (j=0; j<BW; j++) {
             int di,dj;
@@ -194,7 +194,7 @@ static anbool* find_overlap_grid(int B, int outW, int outH,
                     bib2[(MIN(MAX(i+di, 0), BH-1))*BW + (MIN(MAX(j+dj, 0), BW-1))] = TRUE;
         }
     // swap!
-    free(bib);
+    smart_free(bib);
     bib = bib2;
     bib2 = NULL;
 
@@ -355,7 +355,7 @@ int resample_wcs_rgba(const anwcs_t* inwcs, const unsigned char* inimg,
         }
     }
 
-    free(bib);
+    smart_free(bib);
 
     return 0;
 

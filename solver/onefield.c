@@ -43,7 +43,7 @@
 #include "scamp-catalog.h"
 #include "permutedsort.h"
 #include "bl-sort.h"
-
+#include "memory.h"
 static anbool record_match_callback(MatchObj* mo, void* userdata);
 static time_t timer_callback(void* user_data);
 static void add_onefield_params(onefield_t* bp, qfits_header* hdr);
@@ -89,12 +89,12 @@ static anbool grab_tagalong_data(startree_t* starkd, MatchObj* mo, onefield_t* b
         bp->rdls_tagalong = fitstable_get_fits_column_names(tagalong, bp->rdls_tagalong);
         cols = sl_join(bp->rdls_tagalong, ", ");
         logverb("Found tag-along columns: %s\n", cols);
-        free(cols);
+        smart_free(cols);
         //
         sl_remove_duplicates(bp->rdls_tagalong);
         cols = sl_join(bp->rdls_tagalong, ", ");
         logverb("After removing duplicates: %s\n", cols);
-        free(cols);
+        smart_free(cols);
     }
     for (i=0; i<sl_size(bp->rdls_tagalong); i++) {
         const char* col = sl_get(bp->rdls_tagalong, i);
@@ -108,8 +108,8 @@ static anbool grab_tagalong_data(startree_t* starkd, MatchObj* mo, onefield_t* b
             ERROR("Failed to read data for column \"%s\" in index", col);
             continue;
         }
-        tag.name = strdup(col);
-        tag.units = strdup(tag.units);
+        tag.name = smart_strdup(col);
+        tag.units = smart_strdup(tag.units);
         tag.itemsize = fits_get_atom_size(tag.type) * tag.arraysize;
         tag.Ndata = N;
         bl_append(mo->tagalong, &tag);
@@ -128,7 +128,7 @@ static anbool grab_field_tagalong_data(MatchObj* mo, xylist_t* xy, int N) {
     {
         char* txt = sl_join(lst, " ");
         logverb("Found tag-along columns from field: %s\n", txt);
-        free(txt);
+        smart_free(txt);
     }
     for (i=0; i<sl_size(lst); i++) {
         const char* col = sl_get(lst, i);
@@ -142,8 +142,8 @@ static anbool grab_field_tagalong_data(MatchObj* mo, xylist_t* xy, int N) {
             ERROR("Failed to read data for column \"%s\" in index", col);
             continue;
         }
-        tag.name = strdup(col);
-        tag.units = strdup(tag.units);
+        tag.name = smart_strdup(col);
+        tag.units = smart_strdup(tag.units);
         tag.itemsize = fits_get_atom_size(tag.type) * tag.arraysize;
         tag.Ndata = N;
         bl_append(mo->field_tagalong, &tag);
@@ -206,7 +206,7 @@ void onefield_clear_indexes(onefield_t* bp) {
 }
 
 void onefield_set_field_file(onefield_t* bp, const char* fn) {
-    free(bp->fieldfname);
+    smart_free(bp->fieldfname);
     bp->fieldfname = strdup_safe(fn);
 }
 
@@ -216,54 +216,54 @@ void onefield_set_solved_file(onefield_t* bp, const char* fn) {
 }
 
 void onefield_set_solvedin_file(onefield_t* bp, const char* fn) {
-    free(bp->solved_in);
+    smart_free(bp->solved_in);
     bp->solved_in = strdup_safe(fn);
 }
 
 void onefield_set_solvedout_file(onefield_t* bp, const char* fn) {
-    free(bp->solved_out);
+    smart_free(bp->solved_out);
     bp->solved_out = strdup_safe(fn);
 }
 
 void onefield_set_cancel_file(onefield_t* bp, const char* fn) {
-    free(bp->cancelfname);
+    smart_free(bp->cancelfname);
     bp->cancelfname = strdup_safe(fn);
 }
 
 void onefield_set_match_file(onefield_t* bp, const char* fn) {
-    free(bp->matchfname);
+    smart_free(bp->matchfname);
     bp->matchfname = strdup_safe(fn);
 }
 
 void onefield_set_rdls_file(onefield_t* bp, const char* fn) {
-    free(bp->indexrdlsfname);
+    smart_free(bp->indexrdlsfname);
     bp->indexrdlsfname = strdup_safe(fn);
 }
 
 void onefield_set_scamp_file(onefield_t* bp, const char* fn) {
-    free(bp->scamp_fname);
+    smart_free(bp->scamp_fname);
     bp->scamp_fname = strdup_safe(fn);
 }
 
 void onefield_set_corr_file(onefield_t* bp, const char* fn) {
-    free(bp->corr_fname);
+    smart_free(bp->corr_fname);
     bp->corr_fname = strdup_safe(fn);
 }
 
 void onefield_set_wcs_file(onefield_t* bp, const char* fn) {
-    free(bp->wcs_template);
+    smart_free(bp->wcs_template);
     bp->wcs_template = strdup_safe(fn);
 }
 
 void onefield_set_xcol(onefield_t* bp, const char* x) {
-    free(bp->xcolname);
+    smart_free(bp->xcolname);
     if (!x)
         x = "X";
-    bp->xcolname = strdup(x);
+    bp->xcolname = smart_strdup(x);
 }
 
 void onefield_set_ycol(onefield_t* bp, const char* y) {
-    free(bp->ycolname);
+    smart_free(bp->ycolname);
     if (!y)
         y = "Y";
     bp->ycolname = strdup_safe(y);
@@ -509,7 +509,7 @@ void onefield_init(onefield_t* bp) {
     bp->indexes = pl_new(16);
     bp->verify_wcs_list = bl_new(1, sizeof(sip_t));
     bp->verify_wcsfiles = sl_new(1);
-    bp->fieldid_key = strdup("FIELDID");
+    bp->fieldid_key = smart_strdup("FIELDID");
     onefield_set_xcol(bp, NULL);
     onefield_set_ycol(bp, NULL);
     bp->quad_size_fraction_lo = DEFAULT_QSF_LO;
@@ -645,19 +645,19 @@ void onefield_cleanup(onefield_t* bp) {
     bl_free(bp->verify_wcs_list);
     sl_free2(bp->rdls_tagalong);
 
-    free(bp->cancelfname);
-    free(bp->fieldfname);
-    free(bp->fieldid_key);
-    free(bp->indexrdlsfname);
-    free(bp->scamp_fname);
-    free(bp->corr_fname);
-    free(bp->matchfname);
-    free(bp->solved_in);
-    free(bp->solved_out);
-    free(bp->wcs_template);
-    free(bp->xcolname);
-    free(bp->ycolname);
-    free(bp->sort_rdls);
+    smart_free(bp->cancelfname);
+    smart_free(bp->fieldfname);
+    smart_free(bp->fieldid_key);
+    smart_free(bp->indexrdlsfname);
+    smart_free(bp->scamp_fname);
+    smart_free(bp->corr_fname);
+    smart_free(bp->matchfname);
+    smart_free(bp->solved_in);
+    smart_free(bp->solved_out);
+    smart_free(bp->wcs_template);
+    smart_free(bp->xcolname);
+    smart_free(bp->ycolname);
+    smart_free(bp->sort_rdls);
 }
 
 static int sort_rdls(MatchObj* mymo, onefield_t* bp) {
@@ -687,7 +687,7 @@ static int sort_rdls(MatchObj* mymo, onefield_t* bp) {
     perm = permutation_init(NULL, mymo->nindex);
     permuted_sort(sortdata, sizeof(double), asc ? compare_doubles_asc : compare_doubles_desc,
                   perm, mymo->nindex);
-    free(sortdata);
+    smart_free(sortdata);
 
     if (mymo->refxyz)
         permutation_apply(perm, mymo->nindex, mymo->refxyz, mymo->refxyz, 3*sizeof(double));
@@ -704,7 +704,7 @@ static int sort_rdls(MatchObj* mymo, onefield_t* bp) {
                 continue;
             mymo->theta[i] = perm[mymo->theta[i]];
         }
-    free(perm);
+    smart_free(perm);
     return 0;
 }
 
@@ -745,13 +745,14 @@ static anbool record_match_callback(MatchObj* mo, void* userdata) {
         }
 
         logdebug("Converting %i reference stars from xyz to radec\n", mymo->nindex);
-        mymo->refradec = malloc(mymo->nindex * 2 * sizeof(double));
+        mymo->refradec = smart_malloc(mymo->nindex * 2 * sizeof(double));
+        if(!mymo->refradec) return FALSE;
         for (i=0; i<mymo->nindex; i++) {
             xyzarr2radecdegarr(mymo->refxyz+i*3, mymo->refradec+i*2);
             logdebug("  %i: radec %.2f,%.2f\n", i, mymo->refradec[i*2], mymo->refradec[i*2+1]);
         }
-
-        mymo->fieldxy = malloc(mymo->nfield * 2 * sizeof(double));
+        mymo->fieldxy = smart_malloc(mymo->nfield * 2 * sizeof(double));
+        if(!mymo->fieldxy)  return FALSE;
         // whew!
         memcpy(mymo->fieldxy, bp->solver.vf->xy, mymo->nfield * 2 * sizeof(double));
 
@@ -782,7 +783,7 @@ static anbool record_match_callback(MatchObj* mo, void* userdata) {
         if (bp->solver.index) {
             char* base = basename_safe(bp->solver.index->indexname);
             logmsg("Field %i: solved with index %s.\n", mymo->fieldnum, base);
-            free(base);
+            smart_free(base);
         } else {
             logmsg("Field %i: solved with index %i", mymo->fieldnum, mymo->indexid);
             if (mymo->healpix >= 0)
@@ -921,7 +922,7 @@ static void solve_fields(onefield_t* bp, sip_t* verify_wcs) {
             char* idstr = fits_get_dupstring(fieldhdr, bp->fieldid_key);
             if (idstr)
                 strncpy(template.fieldname, idstr, sizeof(template.fieldname) - 1);
-            free(idstr);
+            smart_free(idstr);
         }
 
         // Has the field already been solved?
@@ -987,11 +988,11 @@ static void solve_fields(onefield_t* bp, sip_t* verify_wcs) {
             if (bp->solver.index && bp->solver.index->indexname) {
                 char* copy;
                 char* base;
-                copy = strdup(bp->solver.index->indexname);
-                base = strdup(basename(copy));
-                free(copy);
+                copy = smart_strdup(bp->solver.index->indexname);
+                base = smart_strdup(basename(copy));
+                smart_free(copy);
                 logerr(" (index %s", base);
-                free(base);
+                smart_free(base);
                 if (bp->solver.endobj)
                     logerr(", field objects %i-%i", bp->solver.startobj+1, bp->solver.endobj);
                 logerr(")");
@@ -1061,11 +1062,13 @@ void onefield_matchobj_deep_copy(const MatchObj* mo, MatchObj* dest) {
         memcpy(dest->sip, mo->sip, sizeof(sip_t));
     }
     if (mo->refradec) {
-        dest->refradec = malloc(mo->nindex * 2 * sizeof(double));
+        dest->refradec = smart_malloc(mo->nindex * 2 * sizeof(double));
+        if(!dest->refradec) return;
         memcpy(dest->refradec, mo->refradec, mo->nindex * 2 * sizeof(double));
     }
     if (mo->fieldxy) {
-        dest->fieldxy = malloc(mo->nfield * 2 * sizeof(double));
+        dest->fieldxy = smart_malloc(mo->nfield * 2 * sizeof(double));
+        if(!dest->fieldxy)  return;
         memcpy(dest->fieldxy, mo->fieldxy, mo->nfield * 2 * sizeof(double));
     }
     if (mo->tagalong) {
@@ -1078,7 +1081,8 @@ void onefield_matchobj_deep_copy(const MatchObj* mo, MatchObj* dest) {
             tagcopy.name = strdup_safe(tag->name);
             tagcopy.units = strdup_safe(tag->units);
             if (tag->data) {
-                tagcopy.data = malloc((size_t)tag->Ndata * (size_t)tag->itemsize);
+                tagcopy.data = smart_malloc((size_t)tag->Ndata * (size_t)tag->itemsize);
+                if(!tagcopy.data)   return;
                 memcpy(tagcopy.data, tag->data, (size_t)tag->Ndata * (size_t)tag->itemsize);
             }
             bl_append(dest->tagalong, &tagcopy);
@@ -1095,14 +1099,14 @@ void onefield_free_matchobj(MatchObj* mo) {
         sip_free(mo->sip);
         mo->sip = NULL;
     }
-    free(mo->refradec);
-    free(mo->fieldxy);
-    free(mo->theta);
-    free(mo->matchodds);
-    free(mo->refxyz);
-    free(mo->refxy);
-    free(mo->refstarid);
-    free(mo->testperm);
+    smart_free(mo->refradec);
+    smart_free(mo->fieldxy);
+    smart_free(mo->theta);
+    smart_free(mo->matchodds);
+    smart_free(mo->refxyz);
+    smart_free(mo->refxy);
+    smart_free(mo->refstarid);
+    smart_free(mo->testperm);
     mo->refradec = NULL;
     mo->fieldxy = NULL;
     mo->theta = NULL;
@@ -1116,9 +1120,9 @@ void onefield_free_matchobj(MatchObj* mo) {
         int i;
         for (i=0; i<bl_size(mo->tagalong); i++) {
             tagalong_t* tag = bl_access(mo->tagalong, i);
-            free(tag->name);
-            free(tag->units);
-            free(tag->data);
+            smart_free(tag->name);
+            smart_free(tag->units);
+            smart_free(tag->data);
         }
         bl_free(mo->tagalong);
         mo->tagalong = NULL;
@@ -1127,9 +1131,9 @@ void onefield_free_matchobj(MatchObj* mo) {
         int i;
         for (i=0; i<bl_size(mo->field_tagalong); i++) {
             tagalong_t* tag = bl_access(mo->field_tagalong, i);
-            free(tag->name);
-            free(tag->units);
-            free(tag->data);
+            smart_free(tag->name);
+            smart_free(tag->units);
+            smart_free(tag->data);
         }
         bl_free(mo->field_tagalong);
         mo->field_tagalong = NULL;

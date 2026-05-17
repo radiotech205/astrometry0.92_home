@@ -13,7 +13,7 @@
 #include "errors.h"
 #include "tweak.h"
 #include "mathutil.h"
-
+#include "memory.h"
 static const char* OPTIONS_keirthing = "hW:H:X:Y:vo:";
 
 
@@ -88,10 +88,10 @@ int main_keirthing(int argc, char** args) {
         }
     }
     logmsg("Read %i x,y,ra,dec tuples\n", dl_size(xys)/2);
-
     N = dl_size(xys)/2;
     xy = dl_to_array(xys);
-    xyz = malloc(3 * N * sizeof(double));
+    xyz = smart_malloc(3 * N * sizeof(double));
+    if(!xyz) return 0;
     for (i=0; i<N; i++)
         radecdeg2xyzarr(dl_get(radecs, 2*i), dl_get(radecs, 2*i+1), xyz + i*3);
     dl_free(xys);
@@ -163,8 +163,8 @@ int main_keirthing(int argc, char** args) {
      */
 
     dl_free(otherradecs);
-    free(xy);
-    free(xyz);
+    smart_free(xy);
+    smart_free(xyz);
     return 0;
 }
 

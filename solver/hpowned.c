@@ -14,7 +14,7 @@
 #include "starutil.h"
 #include "mathutil.h"
 #include "boilerplate.h"
-
+#include "memory.h"
 #define OPTIONS_hpowned "hN:mf:"
 
 void print_help_hpowned(char* progname) {
@@ -68,7 +68,8 @@ int main_hpowned(int argc, char** args) {
     hparea = 4.0 * M_PI * square(rad2arcmin(1.0)) / (double)HP;
     fprintf(stderr, "Small healpix area = %g arcmin^2, length ~ %g arcmin.\n", hparea, sqrt(hparea));
 
-    owned = malloc(HP * sizeof(int));
+    owned = smart_malloc(HP * sizeof(int));
+    if(!owned)  return 0;
     for (optind=optstart; optind<argc; optind++) {
         int bighp = atoi(args[optind]);
         memset(owned, 0, HP * sizeof(int));
@@ -99,7 +100,7 @@ int main_hpowned(int argc, char** args) {
         }
         printf("\n");
     }
-    free(owned);
+    smart_free(owned);
 
     return 0;
 }

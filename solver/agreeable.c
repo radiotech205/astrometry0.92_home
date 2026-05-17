@@ -18,7 +18,7 @@
 //#include "solvedclient.h"
 #include "solvedfile.h"
 #include "boilerplate.h"
-
+#include "memory.h"
 char* OPTIONSagreeable = "hA:B:I:J:L:M:r:f:s:S:Fa";
 
 void printHelpagreeable(char* progname) {
@@ -178,11 +178,11 @@ int main_agreeable(int argc, char *argv[]) {
 
     totalsolved = totalunsolved = 0;
 
-    mos =  calloc(ninputfiles, sizeof(MatchObj*));
-    eofs = calloc(ninputfiles, sizeof(anbool));
-    eofieldfile = malloc(ninputfiles * sizeof(anbool));
-    mfs = malloc(ninputfiles * sizeof(matchfile*));
-
+    mos =  smart_calloc(ninputfiles, sizeof(MatchObj*));
+    eofs = smart_calloc(ninputfiles, sizeof(anbool));
+    eofieldfile = smart_malloc(ninputfiles * sizeof(anbool));
+    mfs = smart_malloc(ninputfiles * sizeof(matchfile*));
+    if(!mos || !eofs || !eofieldfile || !mfs)   return 0;
     for (i=0; i<ninputfiles; i++) {
         fprintf(stderr, "Opening file %s...\n", inputfiles[i]);
         mfs[i] = matchfile_open(inputfiles[i]);
@@ -338,9 +338,9 @@ int main_agreeable(int argc, char *argv[]) {
 
     for (i=0; i<ninputfiles; i++)
         matchfile_close(mfs[i]);
-    free(mfs);
-    free(mos);
-    free(eofs);
+    smart_free(mfs);
+    smart_free(mos);
+    smart_free(eofs);
 
     fprintf(stderr, "\nRead %i matches.\n", nread);
     fflush(stderr);

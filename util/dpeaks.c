@@ -13,7 +13,7 @@
 #include "dimage.h"
 #include "permutedsort.h"
 #include "simplexy-common.h"
-
+#include "memory.h"
 /*
  * dpeaks.c
  *
@@ -49,7 +49,7 @@ int dpeaks(float *image,
     int *fullycen = NULL;
 
     /* 1. smooth image */
-    smooth = (float *) malloc(sizeof(float) * nx * ny);
+    smooth = (float *) smart_malloc(sizeof(float) * nx * ny);
     if (smoothimage) {
         dsmooth2(image, nx, ny, 1, smooth);
     } else {
@@ -59,7 +59,7 @@ int dpeaks(float *image,
     }
 
     /* 2. find peaks (highest in the 3x3 neighbourhood) */
-    peaks = (int *) malloc(sizeof(int) * nx * ny);
+    peaks = (int *) smart_malloc(sizeof(int) * nx * ny);
     *npeaks = 0;
     for (j = 1; j < ny - 1; j++) {
         jst = j - 1;
@@ -100,7 +100,7 @@ int dpeaks(float *image,
     }
 
     /* 2. sort peaks */
-    indx = realloc(peaks, sizeof(int) * (*npeaks));
+    indx = smart_realloc(peaks, sizeof(int) * (*npeaks));
     peaks = NULL;
     permuted_sort(smooth, sizeof(float), compare_floats_desc, indx, *npeaks);
 
@@ -128,8 +128,8 @@ int dpeaks(float *image,
     if ((*npeaks) > maxnpeaks)
         *npeaks = maxnpeaks;
 
-    fullxcen = (int *) malloc((*npeaks) * sizeof(int));
-    fullycen = (int *) malloc((*npeaks) * sizeof(int));
+    fullxcen = (int *) smart_malloc((*npeaks) * sizeof(int));
+    fullycen = (int *) smart_malloc((*npeaks) * sizeof(int));
     for (i = 0;i < (*npeaks);i++) {
         fullxcen[i] = indx[i] % nx;
         fullycen[i] = indx[i] / nx;
@@ -146,9 +146,9 @@ int dpeaks(float *image,
 
 
     /* 3. trim close peaks and joined peaks */
-    mask = (int *) malloc(sizeof(int) * nx * ny);
-    object = (int *) malloc(sizeof(int) * nx * ny);
-    keep = (int *) malloc(sizeof(int) * (*npeaks));
+    mask = (int *) smart_malloc(sizeof(int) * nx * ny);
+    object = (int *) smart_malloc(sizeof(int) * nx * ny);
+    keep = (int *) smart_malloc(sizeof(int) * (*npeaks));
     for (i = (*npeaks) - 1;i >= 0;i--) {
         keep[i] = 1;
 

@@ -10,9 +10,9 @@
 #include "kdtree_fits_io.h"
 #include "starutil.h"
 #include "errors.h"
-
+#include "memory.h"
 static codetree_t* codetree_alloc() {
-    codetree_t* s = calloc(1, sizeof(codetree_t));
+    codetree_t* s = smart_calloc(1, sizeof(codetree_t));
     if (!s) {
         fprintf(stderr, "Failed to allocate a code kdtree struct.\n");
         return NULL;
@@ -76,7 +76,7 @@ static codetree_t* my_open(const char* fn, anqfits_t* fits) {
 
     return s;
  bailout:
-    free(s);
+    smart_free(s);
     return NULL;
 }
 
@@ -91,12 +91,12 @@ codetree_t* codetree_open(const char* fn) {
 int codetree_close(codetree_t* s) {
     if (!s) return 0;
     if (s->inverse_perm)
-        free(s->inverse_perm);
+        smart_free(s->inverse_perm);
     if (s->header)
         qfits_header_destroy(s->header);
     if (s->tree)
         kdtree_fits_close(s->tree);
-    free(s);
+    smart_free(s);
     return 0;
 }
 
@@ -106,7 +106,7 @@ static int Ndata(codetree_t* s) {
 
 void codetree_compute_inverse_perm(codetree_t* s) {
     // compute inverse permutation vector.
-    s->inverse_perm = malloc(Ndata(s) * sizeof(int));
+    s->inverse_perm = smart_malloc(Ndata(s) * sizeof(int));
     if (!s->inverse_perm) {
         fprintf(stderr, "Failed to allocate code kdtree inverse permutation vector.\n");
         return;
@@ -136,7 +136,7 @@ codetree_t* codetree_new() {
     s->header = qfits_header_default();
     if (!s->header) {
         fprintf(stderr, "Failed to create a qfits header for code kdtree.\n");
-        free(s);
+        smart_free(s);
         return NULL;
     }
     qfits_header_add(s->header, "AN_FILE", AN_FILETYPE_CODETREE, "This file is a code kdtree.", NULL);

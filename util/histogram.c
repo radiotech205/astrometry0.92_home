@@ -9,17 +9,17 @@
 #include <assert.h>
 
 #include "histogram.h"
-
+#include "memory.h"
 static histogram* hist_new(int nbins) {
-    histogram* h = calloc(1, sizeof(histogram));
+    histogram* h = smart_calloc(1, sizeof(histogram));
     if (!h) {
         fprintf(stderr, "Couldn't allocate a histogram.");
         return NULL;
     }
-    h->hist = calloc(nbins, sizeof(int));
+    h->hist = smart_calloc(nbins, sizeof(int));
     if (!h->hist) {
         fprintf(stderr, "Couldn't allocate a histogram with %i bins.", nbins);
-        free(h);
+        smart_free(h);
         return NULL;
     }
     h->Nbins = nbins;
@@ -45,8 +45,8 @@ histogram* histogram_new_binsize(double zero, double maximum, double binsize) {
 
 
 void histogram_free(histogram* h) {
-    free(h->hist);
-    free(h);
+    smart_free(h->hist);
+    smart_free(h);
 }
 
 int histogram_add(histogram* h, double val) {

@@ -118,7 +118,7 @@ codetree_t* codetree_build(codefile_t* codes,
         return NULL;
     }
     logmsg("Done\n");
-    codekd->tree->name = strdup(CODETREE_NAME);
+    codekd->tree->name = smart_strdup(CODETREE_NAME);
 
     hdr = codetree_header(codekd);
     fits_header_add_int(hdr, "NLEAF", Nleaf, "Target number of points in leaves.");

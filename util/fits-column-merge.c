@@ -12,7 +12,7 @@
 #include "fitsioutils.h"
 #include "boilerplate.h"
 #include "ioutils.h"
-
+#include "memory.h"
 char* OPTIONS_fits_column_merge = "hs:";
 
 void printHelp_fits_column_merge (char* progname) {
@@ -155,7 +155,7 @@ int main_fits_column_merge (int argc, char** args) {
         exit(-1);
     }
 
-    buffer = malloc(MAX(atable->tab_w, btable->tab_w));
+    buffer = smart_malloc(MAX(atable->tab_w, btable->tab_w));
     if (!buffer) {
         fprintf(stderr, "Failed to malloc buffer.\n");
         exit(-1);
@@ -203,7 +203,7 @@ int main_fits_column_merge (int argc, char** args) {
             exit(-1);
         }
     }
-    free(buffer);
+    smart_free(buffer);
 
     if (fits_pad_file(outfid)) {
         fprintf(stderr, "Failed to zero-pad file.\n");

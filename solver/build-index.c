@@ -155,8 +155,8 @@ static int step_unpermute_quads(index_params_t* p,
             return -1;
         }
         // unpermute-quads makes a shallow copy of the tree, so don't just codetree_close(codekd)...
-        free(codekd->tree->perm);
-        free(codekd->tree);
+        smart_free(codekd->tree->perm);
+        smart_free(codekd->tree);
         codekd->tree = NULL;
         codetree_close(codekd);
 
@@ -379,7 +379,7 @@ int build_index_shared_skdt(const char* skdtfn,
 
  cleanup:
     //free(uniperm);
-    free(sortdata);
+    smart_free(sortdata);
     return rtn;
 }
 
@@ -501,8 +501,8 @@ int build_index(fitstable_t* catalog, index_params_t* p,
         assert(ra && dec);
         for (i=0; i<N; i++)
             logdebug("  %i RA,Dec %g,%g\n", i, ra[i], dec[i]);
-        free(ra);
-        free(dec);
+        smart_free(ra);
+        smart_free(dec);
     }
 
 
@@ -605,8 +605,8 @@ int build_index(fitstable_t* catalog, index_params_t* p,
         }
 
         // unpermute-stars makes a shallow copy of the tree, so don't just startree_close(starkd)...
-        free(starkd->tree->perm);
-        free(starkd->tree);
+        smart_free(starkd->tree->perm);
+        smart_free(starkd->tree);
         starkd->tree = NULL;
         startree_close(starkd);
 

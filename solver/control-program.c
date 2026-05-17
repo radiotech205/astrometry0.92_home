@@ -35,7 +35,7 @@
 #include "sip_qfits.h"
 #include "fitsioutils.h"
 #include "tic.h"
-
+#include "memory.h"
 /**
 
  
@@ -120,11 +120,13 @@ static anbool record_match_callback(MatchObj* mo, void* userdata) {
     mo->testperm = NULL;
 
     // Convert xyz to RA,Dec
-    mymatch->refradec = malloc(mymatch->nindex * 2 * sizeof(double));
+    mymatch->refradec = smart_malloc(mymatch->nindex * 2 * sizeof(double));
+    if(!mymatch->refradec)  return FALSE;
     for (i=0; i<mymatch->nindex; i++) {
         xyzarr2radecdegarr(mymatch->refxyz+i*3, mymatch->refradec+i*2);
     }
-    mymatch->fieldxy = malloc(mymatch->nfield * 2 * sizeof(double));
+    mymatch->fieldxy = smart_malloc(mymatch->nfield * 2 * sizeof(double));
+    if(!mymatch->fieldxy)   return FALSE;
     // whew! -- Copy the (permuted) image (field) stars.
     memcpy(mymatch->fieldxy, solver->vf->xy,
            mymatch->nfield * 2 * sizeof(double));
@@ -191,7 +193,7 @@ int main_control_program(int argc, char** args) {
             ignore = TRUE;
             break;
         case 'c':
-            configfn = strdup(optarg);
+            configfn = smart_strdup(optarg);
             break;
         case 'W':
             imagew = atoi(optarg);
@@ -235,11 +237,11 @@ int main_control_program(int argc, char** args) {
         char *me, *mydir;
         me = find_executable(args[0], NULL);
         if (!me)
-            me = strdup(args[0]);
-        mydir = strdup(dirname(me));
-        free(me);
+            me = smart_strdup(args[0]);
+        mydir = smart_strdup(dirname(me));
+        smart_free(me);
         configfn = resolve_path("../etc/astrometry.cfg", mydir);
-        free(mydir);
+        smart_free(mydir);
     }
 
     // Initialize the Astrometry.net engine object from the config file.
@@ -257,7 +259,7 @@ int main_control_program(int argc, char** args) {
                configfn);
         exit( -1);
     }
-    free(configfn);
+    smart_free(configfn);
     logmsg("Loaded %zu indexes.\n", pl_size(engine->indexes));
 
     // Note: For a control program type of application, you will
@@ -357,9 +359,9 @@ int main_control_program(int argc, char** args) {
         starxy_set_flux_array(field, starflux);
         starxy_sort_by_flux(field);
         solver_set_field(solver, field);
-        free(starx);
-        free(stary);
-        free(starflux);
+        smart_free(starx);
+        smart_free(stary);
+        smart_free(starflux);
 
         // center of the image in pixels, according to FITS indexing.
         imagecx = (imagew - 1.0)/2.0;
@@ -528,9 +530,9 @@ static void get_next_field(char* fits_image_fn,
 
     N = simxy.npeaks;
     *nstars = N;
-    *starx = malloc(N * sizeof(double));
-    *stary = malloc(N * sizeof(double));
-    *starflux = malloc(N * sizeof(double));
+    *starx = smart_malloc(N * sizeof(double));
+    *stary = smart_malloc(N * sizeof(double));
+    *starflux = smart_malloc(N * sizeof(double));
     for (i=0; i<N; i++) {
         (*starx)[i] = simxy.x[i];
         (*stary)[i] = simxy.y[i];
@@ -546,7 +548,7 @@ static void get_next_field(char* fits_image_fn,
     if (!*sip) {
         char* errmsg = errors_stop_logging_to_string("\n  ");
         logmsg("Reading WCS header failed:\n  %s\n", errmsg);
-        free(errmsg);
+        smart_free(errmsg);
     }
     // If that doesn't work, look for "RA" and "DEC" header cards.
     if (!*sip) {

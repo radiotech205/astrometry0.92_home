@@ -15,7 +15,7 @@
 #include "anwcs.h"
 #include "log.h"
 #include "errors.h"
-
+#include "memory.h"
 static const char* OPTIONS_wcs_to_tan = "hw:e:tLx:y:W:H:N:o:v";
 
 void print_help_wcs_to_tan(char* progname) {
@@ -152,8 +152,8 @@ int main_wcs_to_tan(int argc, char** args) {
     logverb("Evaluating WCS on a grid of %i x %i in X [%g,%g], Y [%g,%g]\n",
             N, N, xlo, xhi, ylo, yhi);
 
-    xyz = (double*)malloc(sizeof(double) * 3 * N*N);
-    xy = (double*)malloc(sizeof(double) * 2 * N*N);
+    xyz = (double*)smart_malloc(sizeof(double) * 3 * N*N);
+    xy = (double*)smart_malloc(sizeof(double) * 2 * N*N);
     if (!xyz || !xy) {
         ERROR("Failed to allocate %i xyz, xy coords", N*N);
         exit(-1);
@@ -184,8 +184,8 @@ int main_wcs_to_tan(int argc, char** args) {
         exit(-1);
     }
 
-    free(xy);
-    free(xyz);
+    smart_free(xy);
+    smart_free(xyz);
     anwcs_free(inwcs);
 
     return 0;

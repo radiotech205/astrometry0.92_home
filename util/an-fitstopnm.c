@@ -20,7 +20,7 @@
 #include "errors.h"
 #include "fitsioutils.h"
 #include "mathutil.h"
-
+#include "memory.h"
 static const char* OPTIONS_an_fitstopnm = "hi:o:Oe:p:m:IX:N:xnrsvML:H:";
 
 static void printHelp_an_fitstopnm(char* progname) {
@@ -90,7 +90,7 @@ static void sample_percentiles(const float* img, int nx, int ny, int margin,
         i = MIN(np-1, MAX(0, (int)(hip * np)));
         *hi = pix[i];
     }
-    free(pix);
+    smart_free(pix);
 }
 							   
 
@@ -229,7 +229,7 @@ int main_an_fitstopnm(int argc, char *argv[]) {
     if (median) {
         int* perm = permuted_sort(img, sizeof(float), compare_floats_asc, NULL, nx*ny);
         logmsg("Median value: %g\n", img[perm[(nx*ny)/2]]);
-        free(perm);
+        smart_free(perm);
     }
 
     if (ordinal) {
@@ -240,12 +240,11 @@ int main_an_fitstopnm(int argc, char *argv[]) {
 
         logverb("Doing ordinal transform...\n");
         perm = permuted_sort(img, sizeof(float), compare_floats_asc, NULL, np);
-
         if (sixteenbit)
-            outimg = malloc(np * sizeof(uint16_t));
+            outimg = smart_malloc(np * sizeof(uint16_t));
         else
-            outimg = malloc(np);
-
+            outimg = smart_malloc(np);
+        if(!outimg) return 0;
         if (invert) {
             for (i=0; i<np; i++)
                 outimg[perm[i]] = (unsigned char)(maxpix * (double)(np-1 - i) / (double)(np));
@@ -253,7 +252,7 @@ int main_an_fitstopnm(int argc, char *argv[]) {
             for (i=0; i<np; i++)
                 outimg[perm[i]] = (unsigned char)(maxpix * (double)i / (double)(np));
         }
-        free(perm);
+        smart_free(perm);
 
         logverb("Writing output...\n");
         fprintf(fout, "P5 %i %i %i\n", nx, ny, maxpix);
@@ -265,7 +264,7 @@ int main_an_fitstopnm(int argc, char *argv[]) {
             fprintf(stderr, "Failed to write output image: %s\n", strerror(errno));
             exit(-1);
         }
-        free(outimg);
+        smart_free(outimg);
 
     } else {
         int i, j;
@@ -348,7 +347,7 @@ int main_an_fitstopnm(int argc, char *argv[]) {
     if (outfn)
         fclose(fout);
     anqfits_close(anq);
-    free(img);
+    smart_free(img);
     logverb("Done!\n");
     return 0;
 }

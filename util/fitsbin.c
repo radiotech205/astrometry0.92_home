@@ -19,7 +19,7 @@
 #include "an-endian.h"
 #include "tic.h"
 #include "log.h"
-
+#include "memory.h"
 // For in-memory: storage of previously-written extensions.
 struct fitsext {
     qfits_header* header;
@@ -75,15 +75,15 @@ static fitsbin_chunk_t* get_chunk(fitsbin_t* fb, int i) {
 
 static fitsbin_t* new_fitsbin(const char* fn) {
     fitsbin_t* fb;
-    fb = calloc(1, sizeof(fitsbin_t));
+    fb = smart_calloc(1, sizeof(fitsbin_t));
     if (!fb)
         return NULL;
     fb->chunks = bl_new(4, sizeof(fitsbin_chunk_t));
     if (!fn)
         // Can't make it NULL or qfits freaks out.
-        fb->filename = strdup("");
+        fb->filename = smart_strdup("");
     else
-        fb->filename = strdup(fn);
+        fb->filename = smart_strdup(fn);
     return fb;
 }
 
@@ -94,7 +94,7 @@ static anbool in_memory(fitsbin_t* fb) {
 
 static void free_chunk(fitsbin_chunk_t* chunk) {
     if (!chunk) return;
-    free(chunk->tablename_copy);
+    smart_free(chunk->tablename_copy);
     if (chunk->header)
         qfits_header_destroy(chunk->header);
     if (chunk->map) {
@@ -127,7 +127,7 @@ int fitsbin_n_chunks(fitsbin_t* fb) {
 
 fitsbin_chunk_t* fitsbin_add_chunk(fitsbin_t* fb, fitsbin_chunk_t* chunk) {
     chunk = bl_append(fb->chunks, chunk);
-    chunk->tablename_copy = strdup(chunk->tablename);
+    chunk->tablename_copy = smart_strdup(chunk->tablename);
     chunk->tablename = chunk->tablename_copy;
     return chunk;
 }
@@ -157,11 +157,11 @@ int fitsbin_close(fitsbin_t* fb) {
         qfits_header_destroy(fb->primheader);
     for (i=0; i<nchunks(fb); i++) {
         if (in_memory(fb)) {
-            free(get_chunk(fb, i)->data);
+            smart_free(get_chunk(fb, i)->data);
         }
         free_chunk(get_chunk(fb, i));
     }
-    free(fb->filename);
+    smart_free(fb->filename);
     if (fb->chunks)
         bl_free(fb->chunks);
 
@@ -170,7 +170,7 @@ int fitsbin_close(fitsbin_t* fb) {
             fitsext_t* ext = bl_access(fb->extensions, i);
             bl_free(ext->items);
             qfits_header_destroy(ext->header);
-            free(ext->tablename);
+            smart_free(ext->tablename);
         }
         bl_free(fb->extensions);
         bl_free(fb->items);
@@ -182,10 +182,10 @@ int fitsbin_close(fitsbin_t* fb) {
                 continue;
             qfits_table_close(fb->tables[i]);
         }
-        free(fb->tables);
+        smart_free(fb->tables);
     }
 
-    free(fb);
+    smart_free(fb);
     return rtn;
 }
 
@@ -336,7 +336,7 @@ int fitsbin_fix_chunk_header(fitsbin_t* fb, fitsbin_chunk_t* chunk) {
             fb->extensions = bl_new(4, sizeof(fitsext_t));
         ext.header = qfits_header_copy(chunk->header);
         ext.items = fb->items;
-        ext.tablename = strdup(chunk->tablename);
+        ext.tablename = smart_strdup(chunk->tablename);
         bl_append(fb->extensions, &ext);
         fb->items = NULL;
         return 0;
@@ -488,7 +488,7 @@ static int read_chunk(fitsbin_t* fb, fitsbin_chunk_t* chunk) {
     expected = (size_t)chunk->itemsize * (size_t)chunk->nrows;
     if (in_memory(fb)) {
         int i;
-        chunk->data = malloc(expected);
+        chunk->data = smart_malloc(expected);
         for (i=0; i<chunk->nrows; i++) {
             memcpy(((char*)chunk->data) + (size_t)i * (size_t)chunk->itemsize,
                    bl_access(inmemext->items, i), chunk->itemsize);

@@ -14,7 +14,7 @@
 #include "ioutils.h"
 #include "sip.h"
 #include "mathutil.h"
-
+#include "memory.h"
 // This is a naughty preprocessor function because it uses variables
 // declared in the calling scope.
 #define ADDARR(ctype, ftype, col, units, member, arraysize)     \
@@ -177,7 +177,7 @@ pl* matchfile_get_matches_for_field(matchfile* mf, int field) {
             matchfile_pushback_match(mf);
             break;
         }
-        copy = malloc(sizeof(MatchObj));
+        copy = smart_malloc(sizeof(MatchObj));
         memcpy(copy, mo, sizeof(MatchObj));
         pl_append(list, copy);
     }

@@ -19,7 +19,7 @@
 #include "fitsbin.h"
 #include "tic.h"
 #include "log.h"
-
+#include "memory.h"
 // is the given table name one of the above strings?
 int kdtree_fits_column_is_kdtree(char* columnname) {
     return
@@ -212,7 +212,7 @@ static qfits_header* find_tree(const char* treename, const fitsbin_t* fb,
         //printf("Found KDT_NAME entry \"%s\".\n", name);
         if (name && !name[0]) {
             // treat empty string as NULL.
-            free(name);
+            smart_free(name);
             name = NULL;
         }
 
@@ -220,7 +220,7 @@ static qfits_header* find_tree(const char* treename, const fitsbin_t* fb,
 	// bail out if this is not the case.
 	// (if treename is NULL then anything matches.)
 	if (treename && !(name && (strcmp(name, treename) == 0))) {
-            free(name);
+            smart_free(name);
             goto next;
         }
         if (is_tree_header_ok(header, ndim, ndata, nnodes, tt, 0)) {
@@ -241,7 +241,7 @@ int kdtree_fits_contains_tree(const kdtree_fits_t* io, const char* treename) {
     const fitsbin_t* fb = get_fitsbin_const(io);
     char* realname = NULL;
     hdr = find_tree(treename, fb, &ndim, &ndata, &nnodes, &tt, &realname);
-    free(realname);
+    smart_free(realname);
     rtn = (hdr != NULL);
     if (hdr != NULL)
         qfits_header_destroy(hdr);
@@ -259,11 +259,13 @@ kdtree_t* kdtree_fits_read_tree(kdtree_fits_t* io, const char* treename,
     char* fn = fb->filename;
     //double t0;
 
-    kd = CALLOC(1, sizeof(kdtree_t));
+    //kd = CALLOC(1, sizeof(kdtree_t));
+    kd = smart_malloc(1 * sizeof(kdtree_t));
     if (!kd) {
         SYSERROR("Couldn't allocate kdtree");
         return NULL;
     }
+    memset(kd, 0, sizeof(kdtree_t));
 
     header = find_tree(treename, fb, &ndim, &ndata, &nnodes, &tt, &kd->name);
     if (!header) {

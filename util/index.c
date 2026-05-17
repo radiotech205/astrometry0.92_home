@@ -13,7 +13,7 @@
 #include "anqfits.h"
 #include "qfits_rw.h"
 #include "starutil.h"
-
+#include "memory.h"
 anbool index_overlaps_scale_range(index_t* meta,
                                   double quadlo, double quadhi) {
     anbool rtn = 
@@ -54,7 +54,7 @@ static char* get_filename(const char* indexname) {
     char* fits;
     if (file_readable(indexname)) {
         logverb("Index name \"%s\" is readable, using as index filename\n", indexname);
-        return strdup(indexname);
+        return smart_strdup(indexname);
     }
     asprintf_safe(&fits, "%s.fits", indexname);
     if (file_readable(fits)) {
@@ -62,7 +62,7 @@ static char* get_filename(const char* indexname) {
         logverb("Index name \"%s\" with .fits suffix, \"%s\", is readable, using as index filename.\n", indexname, fits);
         return fits;
     }
-    free(fits);
+    smart_free(fits);
     return NULL;
 }
 
@@ -83,7 +83,7 @@ char* index_get_qidx_filename(const char* indexname) {
     } else {
         asprintf_safe(&qidxfn, "%s.qidx.fits", indexfn);
     }
-    free(indexfn);
+    smart_free(indexfn);
     return qidxfn;
 }
 
@@ -113,7 +113,7 @@ anbool index_is_file_index(const char* filename) {
      */
 
  finish:
-    free(indexfn);
+    smart_free(indexfn);
     return rtn;
 }
 
@@ -193,7 +193,7 @@ int index_get_missing_cut_params(int indexid, int* hpnside, int* nsweep,
     if (margin)
         *margin = marg;
     if (pband)
-        *pband = strdup(band);
+        *pband = smart_strdup(band);
     return 0;
 }
 
@@ -259,7 +259,7 @@ int index_dimquads(index_t* indx) {
 }
 
 index_t* index_build_from(codetree_t* codekd, quadfile_t* quads, startree_t* starkd) {
-    index_t* index = calloc(1, sizeof(index_t));
+    index_t* index = smart_calloc(1, sizeof(index_t));
     index->codekd = codekd;
     index->quads = quads;
     index->starkd = starkd;
@@ -274,11 +274,11 @@ index_t* index_load(const char* indexname, int flags, index_t* dest) {
         logverb("Loading metadata for %s...\n", indexname);
 
     if (!dest)
-        allocd = dest = calloc(1, sizeof(index_t));
+        allocd = dest = smart_calloc(1, sizeof(index_t));
     else
         memset(dest, 0, sizeof(index_t));
 
-    dest->indexname = strdup(indexname);
+    dest->indexname = smart_strdup(indexname);
 
     dest->indexfn = get_filename(indexname);
     if (!dest->indexfn) {
@@ -293,8 +293,8 @@ index_t* index_load(const char* indexname, int flags, index_t* dest) {
     if (index_reload(dest))
         goto bailout;
 
-    free(dest->indexname);
-    dest->indexname = strdup(quadfile_get_filename(dest->quads));
+    smart_free(dest->indexname);
+    dest->indexname = smart_strdup(quadfile_get_filename(dest->quads));
     set_meta(dest);
 
     logverb("Index scale: [%g, %g] arcmin, [%g, %g] arcsec\n",
@@ -317,7 +317,7 @@ index_t* index_load(const char* indexname, int flags, index_t* dest) {
 
  bailout:
     index_close(dest);
-    free(allocd);
+    smart_free(allocd);
     return NULL;
 }
 
@@ -399,9 +399,9 @@ int index_close_fds(index_t* ind) {
 
 void index_close(index_t* index) {
     if (!index) return;
-    free(index->indexname);
-    free(index->indexfn);
-    free(index->cutband);
+    smart_free(index->indexname);
+    smart_free(index->indexfn);
+    smart_free(index->cutband);
     index->indexname = index->indexfn = NULL;
     index_unload(index);
     if (index->fits)
@@ -411,5 +411,5 @@ void index_close(index_t* index) {
 
 void index_free(index_t* index) {
     index_close(index);
-    free(index);
+    smart_free(index);
 }

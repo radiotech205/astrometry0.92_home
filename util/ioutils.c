@@ -29,7 +29,7 @@
 #include "ioutils.h"
 #include "errors.h"
 #include "log.h"
-
+#include "memory.h"
 uint32_t ENDIAN_DETECTOR = 0x01020304;
 
 #include "qsort_reentrant.c"
@@ -120,14 +120,14 @@ int split_string_once(const char* str, const char* splitstr,
     }
     if (first) {
         n = start - str;
-        *first = malloc(1 + n);
+        *first = smart_malloc(1 + n);
         memcpy(*first, str, n);
         (*first)[n] = '\0';
     }
     if (second) {
         char* sec = start + strlen(splitstr);
         n = strlen(sec);
-        *second = malloc(1 + n);
+        *second = smart_malloc(1 + n);
         memcpy(*second, sec, n);
         (*second)[n] = '\0';
     }
@@ -189,17 +189,17 @@ int pad_file(char* filename, size_t len, char pad) {
 
 Malloc
 char* dirname_safe(const char* path) {
-    char* copy = strdup(path);
-    char* res = strdup(dirname(copy));
-    free(copy);
+    char* copy = smart_strdup(path);
+    char* res = smart_strdup(dirname(copy));
+    smart_free(copy);
     return res;
 }
 
 Malloc
 char* basename_safe(const char* path) {
-    char* copy = strdup(path);
-    char* res = strdup(basename(copy));
-    free(copy);
+    char* copy = smart_strdup(path);
+    char* res = smart_strdup(basename(copy));
+    smart_free(copy);
     return res;
 }
 
@@ -208,14 +208,14 @@ char* find_file_in_dirs(const char** dirs, int ndirs, const char* filename, anbo
     if (!filename) return NULL;
     if (allow_absolute && filename[0] == '/') {
         if (file_readable(filename))
-            return strdup(filename);
+            return smart_strdup(filename);
     }
     for (i=0; i<ndirs; i++) {
         char* fn;
         asprintf_safe(&fn, "%s/%s", dirs[i], filename);
         if (file_readable(fn))
             return fn;
-        free(fn);
+        smart_free(fn);
     }
     return NULL;
 }
@@ -272,7 +272,7 @@ void asprintf_safe(char** strp, const char* format, ...) {
     va_list lst;
     int rtn;
     va_start(lst, format);
-    rtn = vasprintf(strp, format, lst);
+    rtn = smart_asprintf(strp, format, lst);
     if (rtn == -1) {
         fprintf(stderr, "Error, vasprintf() failed: %s\n", strerror(errno));
         fprintf(stderr, "  (format: \"%s\")\n", format);
@@ -328,7 +328,7 @@ sl* dir_get_contents(const char* path, sl* list, anbool filesonly, anbool recurs
             dir_get_contents(path, list, filesonly, recurse);
         }
         if (freeit)
-            free(fullpath);
+            smart_free(fullpath);
     }
     closedir(dir);
     return list;
@@ -585,24 +585,24 @@ int run_command_get_outputs(const char* cmd, sl** outlines, sl** errlines) {
 
 int mkdir_p(const char* dirpath) {
     sl* tomake = sl_new(4);
-    char* path = strdup(dirpath);
+    char* path = smart_strdup(dirpath);
     while (!file_exists(path)) {
         char* dir;
         sl_push(tomake, path);
-        dir = strdup(dirname(path));
-        free(path);
+        dir = smart_strdup(dirname(path));
+        smart_free(path);
         path = dir;
     }
-    free(path);
+    smart_free(path);
     while (sl_size(tomake)) {
         char* path = sl_pop(tomake);
         if (mkdir(path, 0777)) {
             SYSERROR("Failed to mkdir(%s)", path);
             sl_free2(tomake);
-            free(path);
+            smart_free(path);
             return -1;
         }
-        free(path);
+        smart_free(path);
     }
     sl_free2(tomake);
     return 0;
@@ -621,7 +621,7 @@ char* shell_escape(const char* str) {
         if (!cp) continue;
         nescape++;
     }
-    result = malloc(len + nescape + 1);
+    result = smart_malloc(len + nescape + 1);
     for (i=0, j=0; i<len; i++, j++) {
         char* cp = strchr(escape, str[i]);
         if (!cp) {
@@ -711,7 +711,7 @@ sl* fid_add_lines(FILE* fid, anbool include_newlines, sl* list) {
             return NULL;
         }
         if (feof(fid) && line[0] == '\0') {
-            free(line);
+            smart_free(line);
             break;
         }
         sl_append_nocopy(list, line);
@@ -733,7 +733,7 @@ char* file_get_contents_offset(const char* fn, int offset, int size) {
         SYSERROR("failed to open file \"%s\"", fn);
         goto bailout;
     }
-    buf = malloc(size);
+    buf = smart_malloc(size);
     if (!buf) {
         SYSERROR("failed to malloc %i bytes", size);
         goto bailout;
@@ -754,7 +754,7 @@ char* file_get_contents_offset(const char* fn, int offset, int size) {
     if (fid)
         fclose(fid);
     if (buf)
-        free(buf);
+        smart_free(buf);
     return NULL;
 }
 
@@ -773,14 +773,14 @@ void* file_get_contents(const char* fn, size_t* len, anbool addzero) {
         fprintf(stderr, "file_get_contents: failed to open file \"%s\": %s\n", fn, strerror(errno));
         return NULL;
     }
-    buf = malloc(size + (addzero ? 1 : 0));
+    buf = smart_malloc(size + (addzero ? 1 : 0));
     if (!buf) {
         fprintf(stderr, "file_get_contents: couldn't malloc %lu bytes.\n", (long)size);
         return NULL;
     }
     if (fread(buf, 1, size, fid) != size) {
         fprintf(stderr, "file_get_contents: failed to read %lu bytes: %s\n", (long)size, strerror(errno));
-        free(buf);
+        smart_free(buf);
         return NULL;
     }
     fclose(fid);
@@ -874,7 +874,7 @@ int ends_with(const char* str, const char* suffix) {
 char* strdup_safe(const char* str) {
     char* rtn;
     if (!str) return NULL;
-    rtn = strdup(str);
+    rtn = smart_strdup(str);
     if (!rtn) {
         fprintf(stderr, "Failed to strdup: %s\n", strerror(errno));
         assert(0);
@@ -985,7 +985,7 @@ int read_u32(FILE* fin, unsigned int* val) {
 
 int read_u32s_portable(FILE* fin, unsigned int* val, int n) {
     int i;
-    uint32_t* u = malloc(sizeof(uint32_t) * n);
+    uint32_t* u = smart_malloc(sizeof(uint32_t) * n);
     if (!u) {
         fprintf(stderr, "Couldn't real uint32s: couldn't allocate temp array.\n");
         return 1;
@@ -994,11 +994,11 @@ int read_u32s_portable(FILE* fin, unsigned int* val, int n) {
         for (i=0; i<n; i++) {
             val[i] = ntohl(u[i]);
         }
-        free(u);
+        smart_free(u);
         return 0;
     } else {
         read_complain(fin, "uint32s");
-        free(u);
+        smart_free(u);
         return 1;
     }
 }
@@ -1019,7 +1019,7 @@ static char* growable_buffer_add(char* buf, int index, char c, int* size, int* s
     if (index == *size) {
         // expand
         *size += *sizestep;
-        buf = realloc(buf, *size);
+        buf = smart_realloc(buf, *size);
         if (!buf) {
             fprintf(stderr, "Couldn't allocate buffer: %i.\n", *size);
             return NULL;
@@ -1054,7 +1054,7 @@ char* read_string_terminated(FILE* fin, const char* terminators, int nterminator
     }
     if (ferror(fin)) {
         read_complain(fin, "string");
-        free(rtn);
+        smart_free(rtn);
         return NULL;
     }
     // add \0 if it isn't already there;
@@ -1066,7 +1066,7 @@ char* read_string_terminated(FILE* fin, const char* terminators, int nterminator
         i++;
     }
     if (i < size) {
-        rtn = realloc(rtn, i);
+        rtn = smart_realloc(rtn, i);
         // shouldn't happen - we're shrinking.
         if (!rtn) {
             fprintf(stderr, "Couldn't realloc buffer: %i\n", i);
@@ -1087,14 +1087,14 @@ int write_string(FILE* fout, char* s) {
 int write_fixed_length_string(FILE* fout, char* s, int length) {
     char* str;
     int res;
-    str = calloc(length, 1);
+    str = smart_calloc(length, 1);
     if (!str) {
         fprintf(stderr, "Couldn't allocate a temp buffer of size %i.\n", length);
         return 1;
     }
     sprintf(str, "%.*s", length, s);
     res = fwrite(str, 1, length, fout);
-    free(str);
+    smart_free(str);
     if (res != length) {
         fprintf(stderr, "Couldn't write fixed-length string: %s\n", strerror(errno));
         return 1;
@@ -1141,7 +1141,7 @@ int write_u32_portable(FILE* fout, unsigned int val) {
 
 int write_u32s_portable(FILE* fout, unsigned int* val, int n) {
     int i;
-    uint32_t* v = malloc(sizeof(uint32_t) * n);
+    uint32_t* v = smart_malloc(sizeof(uint32_t) * n);
     if (!v) {
         fprintf(stderr, "Couldn't write u32s: couldn't allocate temp array.\n");
         return 1;
@@ -1150,11 +1150,11 @@ int write_u32s_portable(FILE* fout, unsigned int* val, int n) {
         v[i] = htonl((uint32_t)val[i]);
     }
     if (fwrite(v, sizeof(uint32_t), n, fout) == n) {
-        free(v);
+        smart_free(v);
         return 0;
     } else {
         fprintf(stderr, "Couldn't write u32s: %s\n", strerror(errno));
-        free(v);
+        smart_free(v);
         return 1;
     }
 }
@@ -1192,7 +1192,7 @@ bread_t* buffered_read_new(int elementsize, int Nbuffer, int Ntotal,
                            int (*refill_buffer)(void* userdata, void* buffer, unsigned int offs, unsigned int nelems),
                            void* userdata) {
     bread_t* br;
-    br = calloc(1, sizeof(bread_t));
+    br = smart_calloc(1, sizeof(bread_t));
     br->blocksize = Nbuffer;
     br->elementsize = elementsize;
     br->ntotal = Ntotal;
@@ -1204,7 +1204,7 @@ bread_t* buffered_read_new(int elementsize, int Nbuffer, int Ntotal,
 void* buffered_read(bread_t* br) {
     void* rtn;
     if (!br->buffer) {
-        br->buffer = malloc((size_t)br->blocksize * (size_t)br->elementsize);
+        br->buffer = smart_malloc((size_t)br->blocksize * (size_t)br->elementsize);
         br->nbuff = br->off = br->buffind = 0;
     }
     if (br->buffind == br->nbuff) {
@@ -1232,7 +1232,7 @@ void* buffered_read(bread_t* br) {
 void buffered_read_resize(bread_t* br, int newsize) {
     br->blocksize = newsize;
     if (br->buffer)
-        br->buffer = realloc(br->buffer, (size_t)br->blocksize * (size_t)br->elementsize);
+        br->buffer = smart_realloc(br->buffer, (size_t)br->blocksize * (size_t)br->elementsize);
 }
 
 void buffered_read_reset(bread_t* br) {
@@ -1248,5 +1248,5 @@ void buffered_read_pushback(bread_t* br) {
 }
 
 void buffered_read_free(bread_t* br) {
-    free(br->buffer);
+    smart_free(br->buffer);
 }

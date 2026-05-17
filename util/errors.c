@@ -11,7 +11,7 @@
 #include "errors.h"
 #include "ioutils.h"
 #include "an-bool.h"
-
+#include "memory.h"
 static pl* estack = NULL;
 static anbool atexit_registered = FALSE;
 
@@ -143,7 +143,7 @@ void report_errno() {
 }
 
 err_t* error_new() {
-    err_t* e = calloc(1, sizeof(err_t));
+    err_t* e = smart_calloc(1, sizeof(err_t));
     e->errstack = bl_new(4, sizeof(errentry_t));
     return e;
 }
@@ -152,7 +152,7 @@ void error_free(err_t* e) {
     if (!e) return;
     error_stack_clear(e);
     bl_free(e->errstack);
-    free(e);
+    smart_free(e);
 }
 
 int error_nerrs(const err_t* e) {
@@ -228,12 +228,12 @@ void errors_regex_error(int errcode, const regex_t* re) {
 
 void error_stack_add_entryv(err_t* e, const char* file, int line, const char* func, const char* format, va_list va) {
     char* str;
-    if (vasprintf(&str, format, va) == -1) {
+    if (smart_asprintf(&str, format, va) == -1) {
         fprintf(stderr, "vasprintf failed with format string: \"%s\"\n", format);
         return;
     }
     error_stack_add_entry(e, file, line, func, str);
-    free(str);
+    smart_free(str);
 }
 
 void error_stack_add_entry(err_t* e, const char* file, int line, const char* func, const char* str) {
@@ -258,9 +258,9 @@ void error_stack_clear(err_t* e) {
     int N = bl_size(e->errstack);
     for (i=0; i<N; i++) {
         errentry_t* ee = bl_access(e->errstack, i);
-        free(ee->file);
-        free(ee->func);
-        free(ee->str);
+        smart_free(ee->file);
+        smart_free(ee->func);
+        smart_free(ee->str);
     }
     bl_remove_all(e->errstack);
 }

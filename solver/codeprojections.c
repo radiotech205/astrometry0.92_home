@@ -26,7 +26,7 @@
 #include "boilerplate.h"
 #include "codetree.h"
 #define OPTIONS_codeprojections "hd"
-
+#include "memory.h"
 
 static void print_help_codeprojections(char* progname)
 {
@@ -188,13 +188,14 @@ int main_codeprojections(int argc, char *argv[])
     }
 
     // Allocate memory for projection histograms
-    hists  = calloc(dimcodes * dimcodes, sizeof(int*));
-    dhists = calloc(dimcodes * dimcodes, sizeof(double*));
-
+    hists  = smart_calloc(dimcodes * dimcodes, sizeof(int*));
+    dhists = smart_calloc(dimcodes * dimcodes, sizeof(double*));
+    if(!hists || !dhists)   return 0;
     for (d = 0; d < dimcodes; d++) {
         for (e = 0; e < d; e++) {
-            hists [d*dimcodes + e] = calloc(Nbins * Nbins, sizeof(int));
-            dhists[d*dimcodes + e] = calloc(Nbins * Nbins, sizeof(double));
+            hists [d*dimcodes + e] = smart_calloc(Nbins * Nbins, sizeof(int));
+            dhists[d*dimcodes + e] = smart_calloc(Nbins * Nbins, sizeof(double));
+            if(!hists [d*dimcodes + e] || !dhists[d*dimcodes + e])  return 0;
         }
         // Since the 4x4 matrix of histograms is actually symmetric,
         // only make half
@@ -204,12 +205,12 @@ int main_codeprojections(int argc, char *argv[])
         }
     }
 
-    xyhist  = calloc(Nbins * Nbins, sizeof(int));
-    dxyhist = calloc(Nbins * Nbins, sizeof(double));
-
-    single  = calloc(dimcodes * Nsingle, sizeof(int));
-    dsingle = calloc(dimcodes * Nsingle, sizeof(double));
-
+    xyhist  = smart_calloc(Nbins * Nbins, sizeof(int));
+    dxyhist = smart_calloc(Nbins * Nbins, sizeof(double));
+    if(!xyhist || !dxyhist) return 0;
+    single  = smart_calloc(dimcodes * Nsingle, sizeof(int));
+    dsingle = smart_calloc(dimcodes * Nsingle, sizeof(double));
+    if(!single || !dsingle) return 0;
     for (i=0; i<Ncodes; i++) {
         double code[dimcodes];
 
@@ -240,7 +241,7 @@ int main_codeprojections(int argc, char *argv[])
                 }
                 printf("];\n");
             }
-            free(hist);
+            smart_free(hist);
             if (do_density) {
                 double* dhist;
                 printf("dhist_%i_%i=zeros([%i,%i]);\n",
@@ -252,7 +253,7 @@ int main_codeprojections(int argc, char *argv[])
                         printf("%g,", dhist[i*Nbins + j]);
                     printf("];\n");
                 }
-                free(dhist);
+                smart_free(dhist);
             }
         }
         printf("hist_%i=[", d);
@@ -284,13 +285,13 @@ int main_codeprojections(int argc, char *argv[])
         printf("];\n");
     }
 
-    free(xyhist);
-    free(hists);
-    free(single);
+    smart_free(xyhist);
+    smart_free(hists);
+    smart_free(single);
     if (do_density) {
-        free(dxyhist);
-        free(dhists);
-        free(dsingle);
+        smart_free(dxyhist);
+        smart_free(dhists);
+        smart_free(dsingle);
     }
 
     fprintf(stderr, "Done!\n");

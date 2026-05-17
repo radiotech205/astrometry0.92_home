@@ -11,7 +11,7 @@
 #include "os-features.h"
 #include "errors.h"
 #include "log.h"
-
+#include "memory.h"
 int DFIND2(const IMGTYPE* image,
            int nx,
            int ny,
@@ -19,7 +19,7 @@ int DFIND2(const IMGTYPE* image,
            int* pnobjects) {
     int ix, iy, i;
     int maxgroups = initial_max_groups;
-    dimage_label_t *equivs = malloc(sizeof(dimage_label_t) * maxgroups);
+    dimage_label_t *equivs = smart_malloc(sizeof(dimage_label_t) * maxgroups);
     int maxlabel = 0;
 
     /* Keep track of 'on' pixels to avoid later rescanning */
@@ -48,7 +48,7 @@ int DFIND2(const IMGTYPE* image,
                 // FIXME this part should become uf_new_group()
                 if (maxlabel >= maxgroups) {
                     maxgroups *= 2;
-                    equivs = realloc(equivs, sizeof(dimage_label_t) * maxgroups);
+                    equivs = smart_realloc(equivs, sizeof(dimage_label_t) * maxgroups);
                     assert(equivs);
                 }
                 object[nx*iy+ix] = maxlabel;
@@ -104,7 +104,7 @@ int DFIND2(const IMGTYPE* image,
     if (pnobjects)
         *pnobjects = maxlabel;
 
-    free(equivs);
+    smart_free(equivs);
     il_free(on_pixels);
     return 1;
 }

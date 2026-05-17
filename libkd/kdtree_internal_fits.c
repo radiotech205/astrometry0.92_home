@@ -35,7 +35,7 @@ int MANGLE(kdtree_read_fits)(kdtree_fits_t* io, kdtree_t* kd) {
     if (kdtree_fits_read_chunk(io, &chunk) == 0) {
         kd->lr = chunk.data;
     }
-    free(chunk.tablename);
+    smart_free(chunk.tablename);
 
     // kd->perm
     chunk.tablename = get_table_name(kd->name, KD_STR_PERM);
@@ -45,7 +45,7 @@ int MANGLE(kdtree_read_fits)(kdtree_fits_t* io, kdtree_t* kd) {
     if (kdtree_fits_read_chunk(io, &chunk) == 0) {
         kd->perm = chunk.data;
     }
-    free(chunk.tablename);
+    smart_free(chunk.tablename);
 
     // kd->bb
     chunk.tablename = get_table_name(kd->name, KD_STR_BB);
@@ -68,13 +68,13 @@ int MANGLE(kdtree_read_fits)(kdtree_fits_t* io, kdtree_t* kd) {
             ERROR("Bounding-box table %s should contain either %i (new) or "
                   "%i (old) bounding-boxes, but it has %i.",
                   chunk.tablename, nbb_new, nbb_old, chunk.nrows);
-            free(chunk.tablename);
+            smart_free(chunk.tablename);
             return -1;
         }
         kd->bb.any = chunk.data;
         kd->n_bb = chunk.nrows;
     }
-    free(chunk.tablename);
+    smart_free(chunk.tablename);
 
     // kd->split
     chunk.tablename = get_table_name(kd->name, KD_STR_SPLIT);
@@ -84,7 +84,7 @@ int MANGLE(kdtree_read_fits)(kdtree_fits_t* io, kdtree_t* kd) {
     if (kdtree_fits_read_chunk(io, &chunk) == 0) {
         kd->split.any = chunk.data;
     }
-    free(chunk.tablename);
+    smart_free(chunk.tablename);
 
     // kd->splitdim
     chunk.tablename = get_table_name(kd->name, KD_STR_SPLITDIM);
@@ -94,7 +94,7 @@ int MANGLE(kdtree_read_fits)(kdtree_fits_t* io, kdtree_t* kd) {
     if (kdtree_fits_read_chunk(io, &chunk) == 0) {
         kd->splitdim = chunk.data;
     }
-    free(chunk.tablename);
+    smart_free(chunk.tablename);
 
     // kd->data
     chunk.tablename = get_table_name(kd->name, KD_STR_DATA);
@@ -104,7 +104,7 @@ int MANGLE(kdtree_read_fits)(kdtree_fits_t* io, kdtree_t* kd) {
     if (kdtree_fits_read_chunk(io, &chunk) == 0) {
         kd->data.any = chunk.data;
     }
-    free(chunk.tablename);
+    smart_free(chunk.tablename);
 
     // kd->minval/kd->maxval/kd->scale
     chunk.tablename = get_table_name(kd->name, KD_STR_RANGE);
@@ -119,7 +119,7 @@ int MANGLE(kdtree_read_fits)(kdtree_fits_t* io, kdtree_t* kd) {
         kd->scale  = r[kd->ndim * 2];
         kd->invscale = 1.0 / kd->scale;
     }
-    free(chunk.tablename);
+    smart_free(chunk.tablename);
 
     if (!(kd->bb.any ||
           (kd->split.any && (TTYPE_INTEGER || kd->splitdim)))) {
@@ -194,7 +194,7 @@ int MANGLE(kdtree_write_fits)(kdtree_fits_t* io, const kdtree_t* kd,
     qfits_header_add(hdr, "KDT_DATA", (char*)kdtree_kdtype_to_string(kdtree_datatype(kd)), "kdtree: type of the data", NULL);
     qfits_header_add(hdr, "KDT_LINL", (kd->has_linear_lr ? "T" : "F"), "kdtree: has_linear_lr", NULL);
     WRITE_CHUNK();
-    free(chunk.tablename);
+    smart_free(chunk.tablename);
     fitsbin_chunk_reset(&chunk);
 
     if (kd->lr) {
@@ -212,7 +212,7 @@ int MANGLE(kdtree_write_fits)(kdtree_fits_t* io, const kdtree_t* kd,
              "rightmost data point owned by the node.",
              chunk.tablename, chunk.itemsize);
         WRITE_CHUNK();
-        free(chunk.tablename);
+        smart_free(chunk.tablename);
         fitsbin_chunk_reset(&chunk);
     }
     if (kd->perm) {
@@ -230,7 +230,7 @@ int MANGLE(kdtree_write_fits)(kdtree_fits_t* io, const kdtree_t* kd,
              "index that the data point had in the original array on which the "
              "kdtree was built.", chunk.tablename, chunk.itemsize);
         WRITE_CHUNK();
-        free(chunk.tablename);
+        smart_free(chunk.tablename);
         fitsbin_chunk_reset(&chunk);
     }
     if (kd->bb.any) {
@@ -250,7 +250,7 @@ int MANGLE(kdtree_write_fits)(kdtree_fits_t* io, const kdtree_t* kd,
              (unsigned int)sizeof(ttype),
              kdtree_kdtype_to_string(kdtree_treetype(kd)));
         WRITE_CHUNK();
-        free(chunk.tablename);
+        smart_free(chunk.tablename);
         fitsbin_chunk_reset(&chunk);
     }
     if (kd->split.any) {
@@ -287,7 +287,7 @@ int MANGLE(kdtree_write_fits)(kdtree_fits_t* io, const kdtree_t* kd,
                  kdtree_kdtype_to_string(kdtree_treetype(kd)));
         }
         WRITE_CHUNK();
-        free(chunk.tablename);
+        smart_free(chunk.tablename);
         fitsbin_chunk_reset(&chunk);
     }
     if (kd->splitdim) {
@@ -308,7 +308,7 @@ int MANGLE(kdtree_write_fits)(kdtree_fits_t* io, const kdtree_t* kd,
              "data points on the high side of the plane.",
              chunk.tablename, chunk.itemsize);
         WRITE_CHUNK();
-        free(chunk.tablename);
+        smart_free(chunk.tablename);
         fitsbin_chunk_reset(&chunk);
     }
     if (kd->minval && kd->maxval) {
@@ -343,7 +343,7 @@ int MANGLE(kdtree_write_fits)(kdtree_fits_t* io, const kdtree_t* kd,
                 (hdr, "  dim %i: [%g, %g]", d, kd->minval[d], kd->maxval[d]);
         fits_add_long_comment(hdr, "scale: %g", kd->scale);
         fits_add_long_comment(hdr, "1/scale: %g", kd->invscale);
-        free(chunk.tablename);
+        smart_free(chunk.tablename);
         WRITE_CHUNK();
         fitsbin_chunk_reset(&chunk);
     }
@@ -360,7 +360,7 @@ int MANGLE(kdtree_write_fits)(kdtree_fits_t* io, const kdtree_t* kd,
              "It is stored as %u-dimensional, %u-byte native-endian %ss.",
              chunk.tablename, (unsigned int)kd->ndim, (unsigned int)sizeof(dtype),
              kdtree_kdtype_to_string(kdtree_datatype(kd)));
-        free(chunk.tablename);
+        smart_free(chunk.tablename);
         WRITE_CHUNK();
         fitsbin_chunk_reset(&chunk);
     }

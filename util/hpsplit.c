@@ -23,7 +23,7 @@
 #include "fitstable.h"
 #include "ioutils.h"
 #include "mathutil.h"
-
+#include "memory.h"
 /**
  Accepts a list of input FITS tables, all with exactly the same
  structure, and including RA,Dec columns.
@@ -179,7 +179,7 @@ int main_hpsplit(int argc, char *argv[]) {
 
     NHP = 12 * nside * nside;
     logmsg("%i output healpixes\n", NHP);
-    outtables = calloc(NHP, sizeof(fitstable_t*));
+    outtables = smart_calloc(NHP, sizeof(fitstable_t*));
     assert(outtables);
 
     if (closefiles) {
@@ -190,7 +190,7 @@ int main_hpsplit(int argc, char *argv[]) {
         // this rather than just using the file size because FITS
         // files are always padded out to fill an integer number of
         // FITS blocks of 2880 bytes).
-        resume_offsets = calloc(NHP, sizeof(off_t));
+        resume_offsets = smart_calloc(NHP, sizeof(off_t));
         assert(resume_offsets);
     }
     
@@ -218,8 +218,8 @@ int main_hpsplit(int argc, char *argv[]) {
      */
 
 
-    cap_t* mincaps = malloc(NHP * sizeof(cap_t));
-    cap_t* maxcaps = malloc(NHP * sizeof(cap_t));
+    cap_t* mincaps = smart_malloc(NHP * sizeof(cap_t));
+    cap_t* maxcaps = smart_malloc(NHP * sizeof(cap_t));
     for (i=0; i<NHP; i++) {
         // center
         double r2;
@@ -294,7 +294,7 @@ int main_hpsplit(int argc, char *argv[]) {
             ERROR("Failed to write header of backref table \"%s\"", backref);
             exit(-1);
         }
-        buf = malloc(maxlen+1);
+        buf = smart_malloc(maxlen+1);
         assert(buf);
 
         for (i=0; i<sl_size(infns); i++) {
@@ -315,7 +315,7 @@ int main_hpsplit(int argc, char *argv[]) {
             exit(-1);
         }
         logmsg("Wrote backref table %s\n", backref);
-        free(buf);
+        smart_free(buf);
     }
 
     for (i=0; i<sl_size(infns); i++) {
@@ -343,7 +343,7 @@ int main_hpsplit(int argc, char *argv[]) {
                 ERROR("Failed to run command: \"%s\"", cmd);
                 exit(-1);
             }
-            free(cmd);
+            smart_free(cmd);
             infn = tempfn;
         }
 
@@ -513,7 +513,7 @@ int main_hpsplit(int argc, char *argv[]) {
                     int16_t brfile;
                     int32_t brind;
                     if (!padrowdata) {
-                        padrowdata = malloc(R + sizeof(int16_t) + sizeof(int32_t));
+                        padrowdata = smart_malloc(R + sizeof(int16_t) + sizeof(int32_t));
                         assert(padrowdata);
                     }
                     // convert to FITS endian
@@ -564,7 +564,7 @@ int main_hpsplit(int argc, char *argv[]) {
         // wack... buffered_read_free() just frees its internal buffer,
         // not the "rowbuf" struct itself.
         // who wrote this crazy code?  Oh, me of 5 years ago.  Jerk.
-        free(rowbuf);
+        smart_free(rowbuf);
 
         fitstable_close(intable);
         il_free(hps);
@@ -635,15 +635,15 @@ int main_hpsplit(int argc, char *argv[]) {
         }
     }
 
-    free(outtables);
+    smart_free(outtables);
     sl_free2(infns);
     sl_free2(cols);
     sl_free2(e_cols);
 
-    free(mincaps);
-    free(maxcaps);
+    smart_free(mincaps);
+    smart_free(maxcaps);
 
-    free(resume_offsets);
+    smart_free(resume_offsets);
     
     return 0;
 }

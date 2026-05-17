@@ -18,10 +18,10 @@ void  FREE(void* ptr);
 
 #else
 
-#define CALLOC calloc
-#define MALLOC malloc
-#define REALLOC realloc
-#define FREE free
+#define CALLOC smart_calloc
+#define MALLOC smart_malloc
+#define REALLOC smart_realloc
+#define FREE smart_free
 
 #endif
 

@@ -15,7 +15,7 @@
 #include "os-features.h"
 #include "gslutils.h"
 #include "errors.h"
-
+#include "memory.h"
 static void errhandler(const char * reason,
                        const char * file,
                        int line,
@@ -61,13 +61,13 @@ void gslutils_matrix_multiply(gsl_matrix* C,
 
 int gslutils_solve_leastsquares_v(gsl_matrix* A, int NB, ...) {
     int i, res;
-    gsl_vector**  B = malloc(NB * sizeof(gsl_vector*));
+    gsl_vector**  B = smart_malloc(NB * sizeof(gsl_vector*));
     // Whoa, three-star programming!
-    gsl_vector*** X = malloc(NB * sizeof(gsl_vector**));
-    gsl_vector*** R = malloc(NB * sizeof(gsl_vector**));
+    gsl_vector*** X = smart_malloc(NB * sizeof(gsl_vector**));
+    gsl_vector*** R = smart_malloc(NB * sizeof(gsl_vector**));
 
-    gsl_vector** Xtmp = malloc(NB * sizeof(gsl_vector*));
-    gsl_vector** Rtmp = malloc(NB * sizeof(gsl_vector*));
+    gsl_vector** Xtmp = smart_malloc(NB * sizeof(gsl_vector*));
+    gsl_vector** Rtmp = smart_malloc(NB * sizeof(gsl_vector*));
 
     va_list va;
     va_start(va, NB);
@@ -89,11 +89,11 @@ int gslutils_solve_leastsquares_v(gsl_matrix* A, int NB, ...) {
         else
             gsl_vector_free(Rtmp[i]);
     }
-    free(Xtmp);
-    free(Rtmp);
-    free(X);
-    free(R);
-    free(B);
+    smart_free(Xtmp);
+    smart_free(Rtmp);
+    smart_free(X);
+    smart_free(R);
+    smart_free(B);
     return res;
 }
 

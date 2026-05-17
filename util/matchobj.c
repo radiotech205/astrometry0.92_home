@@ -9,13 +9,13 @@
 #include "starutil.h"
 #include "log.h"
 #include "verify.h"
-
+#include "memory.h"
 char* matchobj_hit_miss_string(int* theta, int* testperm, int nbest,
                                int nfield, char* target) {
     int i;
     char* cur;
     if (!target) {
-        target = malloc(256);
+        target = smart_malloc(256);
     }
     cur = target;
     for (i=0; i<MIN(nfield, 100); i++) {
@@ -61,11 +61,11 @@ char* matchobj_hit_miss_string(int* theta, int* testperm, int nbest,
 
 void matchobj_log_hit_miss(int* theta, int* testperm, int nbest, int nfield, int loglev, const char* prefix) {
     int n = strlen(prefix);
-    char* buf = malloc(120 + n);
+    char* buf = smart_malloc(120 + n);
     strcpy(buf, prefix);
     matchobj_hit_miss_string(theta, testperm, nbest, nfield, buf + n);
     loglevel(loglev, "%s", buf);
-    free(buf);
+    smart_free(buf);
 }
 
 

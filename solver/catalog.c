@@ -17,7 +17,7 @@
 #include "starutil.h"
 #include "mathutil.h"
 #include "errors.h"
-
+#include "memory.h"
 #define CHUNK_XYZ    0
 #define CHUNK_MAG    1
 #define CHUNK_MAG_ERR 2
@@ -68,7 +68,8 @@ static catalog* new_catalog(const char* fn, anbool writing) {
     catalog* cat;
     fitsbin_chunk_t chunk;
 
-    cat = calloc(1, sizeof(catalog));
+    cat = smart_calloc(1, sizeof(catalog));
+    if(!cat)    return NULL;
     if (!cat) {
         fprintf(stderr, "catalog_open: malloc failed.\n");
     }
@@ -388,7 +389,7 @@ int catalog_close(catalog* cat) {
     fl_free(cat->pmlist);
     fl_free(cat->sigpmlist);
     bl_free(cat->idlist);
-    free(cat);
+    smart_free(cat);
     return rtn;
 }
 

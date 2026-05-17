@@ -21,6 +21,7 @@
 #include "log.h"
 #include "cfitsutils.h"
 #include "boilerplate.h"
+#include "memory.h"
 int image2xy_files(const char* infn, const char* outfn,
                    anbool do_u8, int downsample, int downsample_as_required,
                    int extension, int plane,
@@ -77,15 +78,15 @@ int image2xy_files(const char* infn, const char* outfn,
     asprintf_safe(&str, "GIT URL: %s", AN_GIT_URL);
     fits_write_history(ofptr, str, &status);
     CFITS_CHECK("Failed to write GIT HISTORY headers");
-    free(str);
+    smart_free(str);
     asprintf_safe(&str, "GIT Rev: %s", AN_GIT_REVISION);
     fits_write_history(ofptr, str, &status);
     CFITS_CHECK("Failed to write GIT HISTORY headers");
-    free(str);
+    smart_free(str);
     asprintf_safe(&str, "GIT Date: %s", AN_GIT_DATE);
     fits_write_history(ofptr, str, &status);
     CFITS_CHECK("Failed to write GIT HISTORY headers");
-    free(str);
+    smart_free(str);
     fits_write_history(ofptr, "Visit us on the web at http://astrometry.net/", &status);
     CFITS_CHECK("Failed to write GIT HISTORY headers");
 
@@ -126,8 +127,8 @@ int image2xy_files(const char* infn, const char* outfn,
 
         fits_get_img_type(fptr, &bitpix, &status);
         CFITS_CHECK("Failed to get FITS image type");
-
-        fpixel = malloc(naxis * sizeof(long));
+        fpixel = smart_malloc(naxis * sizeof(long));
+        if(!fpixel) return 0;
         for (a=0; a<naxis; a++)
             fpixel[a] = 1;
 
@@ -146,7 +147,7 @@ int image2xy_files(const char* infn, const char* outfn,
             simplexy_fill_in_defaults_u8(params);
 
             // u8 image.
-            params->image_u8 = malloc(naxisn[0] * naxisn[1]);
+            params->image_u8 = smart_malloc(naxisn[0] * naxisn[1]);
             if (!params->image_u8) {
                 SYSERROR("Failed to allocate u8 image array");
                 goto bailout;
@@ -157,7 +158,7 @@ int image2xy_files(const char* infn, const char* outfn,
         } else {
             simplexy_fill_in_defaults(params);
 
-            params->image = malloc(naxisn[0] * naxisn[1] * sizeof(float));
+            params->image = smart_malloc(naxisn[0] * naxisn[1] * sizeof(float));
             if (!params->image) {
                 SYSERROR("Failed to allocate image array");
                 goto bailout;
@@ -165,7 +166,7 @@ int image2xy_files(const char* infn, const char* outfn,
             fits_read_pix(fptr, TFLOAT, fpixel, naxisn[0]*naxisn[1], NULL,
                           params->image, NULL, &status);
         }
-        free(fpixel);
+        smart_free(fpixel);
         CFITS_CHECK("Failed to read image pixels");
 
         params->nx = naxisn[0];

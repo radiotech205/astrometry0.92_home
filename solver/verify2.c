@@ -15,7 +15,7 @@
 #include "log.h"
 #include "sip-utils.h"
 #include "healpix.h"
-
+#include "memory.h"
 #define DEBUGVERIFY 1
 #if DEBUGVERIFY
 //#define debug(args...) fprintf(stderr, args)
@@ -84,15 +84,15 @@ void verify_get_all_matches(const double* refxys, int NR,
     il** reflist;
     dl** problist;
 
-    reflist  = calloc(NT, sizeof(il*));
-    problist = calloc(NT, sizeof(dl*));
-
+    reflist  = smart_calloc(NT, sizeof(il*));
+    problist = smart_calloc(NT, sizeof(dl*));
+    if(!reflist || !problist)   return;
     // Build a tree out of the index stars in pixel space...
     // kdtree scrambles the data array so make a copy first.
-    refcopy = malloc(2 * NR * sizeof(double));
+    refcopy = smart_malloc(2 * NR * sizeof(double));
+    if(!refcopy)    return;
     memcpy(refcopy, refxys, 2 * NR * sizeof(double));
     rtree = kdtree_build(NULL, refcopy, NR, 2, Nleaf, KDTT_DOUBLE, KD_BUILD_SPLIT);
-
     logbg = log(1.0 / effective_area);
     logd  = log(distractors / effective_area);
     loglimit = log(distractors / effective_area * limit);
@@ -146,7 +146,7 @@ void verify_get_all_matches(const double* refxys, int NR,
         kdtree_free_query(res);
     }
     kdtree_free(rtree);
-    free(refcopy);
+    smart_free(refcopy);
 
     *p_reflist  = reflist;
     *p_problist = problist;

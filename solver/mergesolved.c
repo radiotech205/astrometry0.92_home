@@ -11,7 +11,7 @@
 #include "boilerplate.h"
 #include "solvedfile.h"
 #include "an-bool.h"
-
+#include "memory.h"
 const char* OPTIONS_mergesolved = "ho:e";
 
 void printHelp_mergesolved(char* progname) {
@@ -66,8 +66,8 @@ int main_mergesolved(int argc, char** args) {
         }
         if (n > N) N = n;
     }
-
-    solved = calloc(N, sizeof(anbool));
+    solved = smart_calloc(N, sizeof(anbool));
+    if(!solved) return 0;
     for (i=0; i<ninputfiles; i++) {
         il* slist;
         int j;
@@ -81,6 +81,6 @@ int main_mergesolved(int argc, char** args) {
         exit(-1);
     }
 
-    free(solved);
+    smart_free(solved);
     return 0;
 }

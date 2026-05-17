@@ -17,7 +17,7 @@
 #include "anqfits.h"
 
 #include "log.h"
-
+#include "memory.h"
 struct fitscol_t {
     char* colname;
 
@@ -293,7 +293,7 @@ int fitstable_copy_rows_data(fitstable_t* intable, int* rows, int N, fitstable_t
     // We need to endian-flip if we're going from FITS file <--> memory.
     anbool flip = need_endian_flip() && (in_memory(intable) != in_memory(outtable));
     R = fitstable_row_size(intable);
-    buf = malloc(R);
+    buf = smart_malloc(R);
     for (i=0; i<N; i++) {
         if (fitstable_read_row_data(intable, rows ? rows[i] : i, buf)) {
             ERROR("Failed to read data from input table");
@@ -312,7 +312,7 @@ int fitstable_copy_rows_data(fitstable_t* intable, int* rows, int N, fitstable_t
             return -1;
         }
     }
-    free(buf);
+    smart_free(buf);
     return 0;
 }
 
@@ -579,8 +579,8 @@ int fitstable_remove_column(fitstable_t* tab, const char* name) {
     for (i=0; i<ncols(tab); i++) {
         fitscol_t* col = getcol(tab, i);
         if (strcasecmp(name, col->colname) == 0) {
-            free(col->colname);
-            free(col->units);
+            smart_free(col->colname);
+            smart_free(col->units);
             bl_remove_index(tab->cols, i);
             return 0;
         }
@@ -622,8 +622,8 @@ int fitstable_read_structs(fitstable_t* tab, void* struc,
         if (col->fitstype != col->ctype) {
             int NB = fitscolumn_get_size(col) * N;
             if (NB > highwater) {
-                free(tempdata);
-                tempdata = malloc(NB);
+                smart_free(tempdata);
+                tempdata = smart_malloc(NB);
                 highwater = NB;
             }
             dest = tempdata;
@@ -663,7 +663,7 @@ int fitstable_read_structs(fitstable_t* tab, void* struc,
                               col->arraysize, N);
         }
     }
-    free(tempdata);
+    smart_free(tempdata);
 
     if (tab->postprocess_read_structs)
         return tab->postprocess_read_structs(tab, struc, strucstride, offset, N);
@@ -689,7 +689,7 @@ static int write_one(fitstable_t* table, const void* struc, anbool flip,
 
     if (in_memory(table)) {
         ensure_row_list_exists(table);
-        thisrow = calloc(1, bl_datasize(table->rows));
+        thisrow = smart_calloc(1, bl_datasize(table->rows));
     }
 
     for (i=0; i<nc; i++) {
@@ -717,8 +717,8 @@ static int write_one(fitstable_t* table, const void* struc, anbool flip,
         if (columndata && col->fitstype != col->ctype) {
             int sz = MAX(256, MAX(col->csize, col->fitssize) * col->arraysize);
             if (sz > Nbuf) {
-                free(buf);
-                buf = malloc(sz);
+                smart_free(buf);
+                buf = smart_malloc(sz);
             }
 
             fits_convert_data(buf, col->fitssize, col->fitstype,
@@ -738,10 +738,10 @@ static int write_one(fitstable_t* table, const void* struc, anbool flip,
                 break;
         }
     }
-    free(buf);
+    smart_free(buf);
     if (in_memory(table))
         bl_append(table->rows, thisrow);
-    free(thisrow);
+    smart_free(thisrow);
     table->table->nr++;
     return ret;
 }
@@ -816,7 +816,7 @@ int fitstable_write_one_column(fitstable_t* table, int colnum,
     col = getcol(table, colnum);
     if (col->fitstype != col->ctype) {
         int sz = col->fitssize * col->arraysize * nrows;
-        buf = malloc(sz);
+        buf = smart_malloc(sz);
         fits_convert_data(buf, col->fitssize * col->arraysize, col->fitstype,
                           src, src_stride, col->ctype,
                           col->arraysize, nrows);
@@ -840,7 +840,7 @@ int fitstable_write_one_column(fitstable_t* table, int colnum,
             src = ((const char*)src) + src_stride;
         }
     }
-    free(buf);
+    smart_free(buf);
 
     if (!in_memory(table)) {
         if (fseeko(table->fid, foffset, SEEK_SET)) {
@@ -855,8 +855,8 @@ void fitstable_clear_table(fitstable_t* tab) {
     int i;
     for (i=0; i<ncols(tab); i++) {
         fitscol_t* col = getcol(tab, i);
-        free(col->colname);
-        free(col->units);
+        smart_free(col->colname);
+        smart_free(col->units);
     }
     bl_remove_all(tab->cols);
 }
@@ -916,7 +916,7 @@ static void* read_array_into(const fitstable_t* tab,
     if (dest)
         cdata = dest;
     else
-        cdata = calloc((size_t)Nread * (size_t)arraysize, csize);
+        cdata = smart_calloc((size_t)Nread * (size_t)arraysize, csize);
 
     if (dest && deststride > 0)
         cstride = deststride;
@@ -927,7 +927,7 @@ static void* read_array_into(const fitstable_t* tab,
     if (csize < fitssize) {
         // Need to allocate a bigger temp array and down-convert the data.
         // HACK - could set data=tempdata and realloc after (if 'dest' is NULL)
-        tempdata = calloc((size_t)Nread * (size_t)arraysize, fitssize);
+        tempdata = smart_calloc((size_t)Nread * (size_t)arraysize, fitssize);
         fitsdata = tempdata;
     } else {
         // We'll read the data into the first fraction of the output array.
@@ -991,7 +991,7 @@ static void* read_array_into(const fitstable_t* tab,
         }
     }
 
-    free(tempdata);
+    smart_free(tempdata);
     return cdata;
 }
 
@@ -1094,7 +1094,7 @@ void fitstable_next_extension(fitstable_t* tab) {
 
 static fitstable_t* fitstable_new() {
     fitstable_t* tab;
-    tab = calloc(1, sizeof(fitstable_t));
+    tab = smart_calloc(1, sizeof(fitstable_t));
     if (!tab)
         return tab;
     tab->cols = bl_new(8, sizeof(fitscol_t));
@@ -1310,16 +1310,16 @@ int fitstable_close(fitstable_t* tab) {
         qfits_header_destroy(tab->header);
     if (tab->table)
         qfits_table_close(tab->table);
-    free(tab->fn);
+    smart_free(tab->fn);
     for (i=0; i<ncols(tab); i++) {
         fitscol_t* col = getcol(tab, i);
-        free(col->colname);
-        free(col->units);
+        smart_free(col->colname);
+        smart_free(col->units);
     }
     bl_free(tab->cols);
     if (tab->br) {
         buffered_read_free(tab->br);
-        free(tab->br);
+        smart_free(tab->br);
     }
     if (tab->rows) {
         bl_free(tab->rows);
@@ -1336,7 +1336,7 @@ int fitstable_close(fitstable_t* tab) {
         }
         bl_free(tab->extensions);
     }
-    free(tab);
+    smart_free(tab);
     return rtn;
 }
 
@@ -1596,7 +1596,7 @@ void fitstable_error_report_missing(fitstable_t* tab) {
     mstr = sl_join(missing, ", ");
     sl_free2(missing);
     ERROR("Missing required columns: %s", mstr);
-    free(mstr);
+    smart_free(mstr);
 }
 
 static void fitstable_create_table(fitstable_t* tab) {

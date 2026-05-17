@@ -855,7 +855,7 @@ anqfits_t* anqfits_open_hdu(const char* filename, int hdu) {
     debug("primary header: data_bytes %zu\n", data_bytes);
 
     qf = calloc(1, sizeof(anqfits_t));
-    qf->filename = strdup(filename);
+    qf->filename = smart_strdup(filename);
     qf->exts = calloc(ext_capacity, sizeof(anqfits_ext_t));
     assert(qf->exts);
     if (!qf->exts)

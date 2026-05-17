@@ -8,7 +8,7 @@
 #include "index.h"
 #include "log.h"
 #include "errors.h"
-
+#include "memory.h"
 void multiindex_unload_starkd(multiindex_t* mi) {
     int i;
     for (i=0; i<multiindex_n(mi); i++) {
@@ -73,7 +73,7 @@ index_t* multiindex_get(const multiindex_t* mi, int i) {
 }
 
 multiindex_t* multiindex_new(const char* skdtfn) {
-    multiindex_t* mi = calloc(1, sizeof(multiindex_t));
+    multiindex_t* mi = smart_calloc(1, sizeof(multiindex_t));
     logverb("Reading star KD tree from %s...\n", skdtfn);
     mi->fits = anqfits_open(skdtfn);
     if (!mi->fits) {
@@ -121,9 +121,9 @@ int multiindex_add_index(multiindex_t* mi, const char* fn, int flags) {
     ind = index_build_from(codes, quads, mi->starkd);
     ind->fits = fits;
     if (!ind->indexname)
-        ind->indexname = strdup(fn);
+        ind->indexname = smart_strdup(fn);
     // shouldn't be needed, but set anyway
-    ind->indexfn = strdup(fn);
+    ind->indexfn = smart_strdup(fn);
 
     pl_append(mi->inds, ind);
 
@@ -192,6 +192,6 @@ void multiindex_close(multiindex_t* mi) {
 
 void multiindex_free(multiindex_t* mi) {
     multiindex_close(mi);
-    free(mi);
+    smart_free(mi);
 }
 

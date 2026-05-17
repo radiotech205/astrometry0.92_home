@@ -15,7 +15,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "fitsio.h"
-
+#include "memory.h"
 int main_imstat(int argc, char *argv[])
 {
     fitsfile *fptr;  /* FITS file pointer */
@@ -52,7 +52,7 @@ int main_imstat(int argc, char *argv[])
                 return(1);
             }
 
-            pix = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
+            pix = (double *) smart_malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
 
             if (pix == NULL) {
                 printf("Memory allocation error\n");
@@ -76,7 +76,7 @@ int main_imstat(int argc, char *argv[])
                     }
                 }
       
-            free(pix);
+            smart_free(pix);
             fits_close_file(fptr, &status);
         }
 

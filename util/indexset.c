@@ -2,7 +2,7 @@
 #include "indexset.h"
 #include "ioutils.h"
 #include "index.h"
-
+#include "memory.h"
 void indexset_get(const char* name, pl* indexlist) {
 
     if (streq(name, "5000")) {
@@ -17,7 +17,7 @@ void indexset_get(const char* name, pl* indexlist) {
                 nside = 1;
             }
             for (hp=0; hp<maxhp; hp++) {
-                index_t* ind = calloc(1, sizeof(index_t));
+                index_t* ind = smart_calloc(1, sizeof(index_t));
                 char* iname;
                 asprintf_safe(&iname, "index-%i-%02i.fits", 5000 + scale, hp);
                 ind->indexname = iname;
@@ -41,7 +41,7 @@ void indexset_get(const char* name, pl* indexlist) {
   	    maxhp = 48;
 	    nside = 2;
             for (hp=0; hp<maxhp; hp++) {
-                index_t* ind = calloc(1, sizeof(index_t));
+                index_t* ind = smart_calloc(1, sizeof(index_t));
                 char* iname;
                 asprintf_safe(&iname, "index-%i-%02i.fits", 5200 + scale, hp);
                 ind->indexname = iname;
@@ -65,7 +65,7 @@ void indexset_get(const char* name, pl* indexlist) {
   	    maxhp = 192;
 	    nside = 4;
             for (hp=0; hp<maxhp; hp++) {
-                index_t* ind = calloc(1, sizeof(index_t));
+                index_t* ind = smart_calloc(1, sizeof(index_t));
                 char* iname;
                 asprintf_safe(&iname, "index-%i-%03i.fits", 5400 + scale, hp);
                 ind->indexname = iname;

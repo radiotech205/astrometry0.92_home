@@ -15,7 +15,7 @@
 #include "healpix.h"
 #include "starutil.h"
 #include "mathutil.h"
-
+#include "memory.h"
 #define OPTIONS_hpgrid "hN:nM:F:rRe"
 
 void print_help_hpgrid(char* progname) {
@@ -85,8 +85,8 @@ int main_hpgrid(int argc, char** args) {
 
     printf("Nside=%i;\n", Nside);
 
-    radecs = malloc(HP * 2 * sizeof(double));
-	
+    radecs = smart_malloc(HP * 2 * sizeof(double));
+    if(!radecs) return 0;
     for (hp=0; hp<HP; hp++) {
         double xyz[3];
         double ra, dec;
@@ -208,7 +208,7 @@ int main_hpgrid(int argc, char** args) {
         }
     }
 
-    free(radecs);
+    smart_free(radecs);
 
     return 0;
 }

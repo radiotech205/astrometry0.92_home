@@ -31,7 +31,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
-
+#include "memory.h"
 __inline__ void*
 _mm_malloc (size_t size, size_t align)
 {
@@ -55,7 +55,7 @@ _mm_malloc (size_t size, size_t align)
     if (align < 2 * sizeof (void *))
       align = 2 * sizeof (void *);
 
-  malloc_ptr = malloc (size + align);
+  malloc_ptr = smart_malloc (size + align);
   if (!malloc_ptr)
     return ((void *) 0);
 
@@ -73,7 +73,7 @@ __inline__ void
 _mm_free (void * aligned_ptr)
 {
   if (aligned_ptr)
-    free (((void **) aligned_ptr) [-1]);
+    smart_free (((void **) aligned_ptr) [-1]);
 }
 
 #endif /* _MM_MALLOC_H_INCLUDED */

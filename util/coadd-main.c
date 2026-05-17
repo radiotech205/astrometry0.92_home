@@ -181,7 +181,7 @@ int main_coadd(int argc, char** args) {
             logmsg("Smoothing by Gaussian with sigma=%g\n", sigma);
             kernel = convolve_get_gaussian_kernel_f(sigma, 4, &k0, &nk);
             convolve_separable_f(img, W, H, kernel, k0, nk, img, NULL);
-            free(kernel);
+            smart_free(kernel);
         }
 
         fn = sl_get(inwcsfns, i);
@@ -247,9 +247,9 @@ int main_coadd(int argc, char** args) {
         coadd_add_image(coadd, img, wt, overallwt, inwcs);
 
         anwcs_free(inwcs);
-        free(img);
+        smart_free(img);
         if (wt)
-            free(wt);
+            smart_free(wt);
     }
 
     //

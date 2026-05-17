@@ -167,8 +167,8 @@ int main_startree(int argc, char *argv[]) {
     }
 
     if (treename) {
-        free(starkd->tree->name);
-        starkd->tree->name = strdup(treename);
+        smart_free(starkd->tree->name);
+        starkd->tree->name = smart_strdup(treename);
     }
 
     if (unpermute) {

@@ -11,7 +11,7 @@ char* get_next_line(FILE* fid) {
     if (!line) return line;
     // ignore comments...
     if (line[0] == '#') {
-        free(line);
+        smart_free(line);
         return get_next_line(fid);
     }
     return line;
@@ -43,10 +43,10 @@ int read_ls_file_header(FILE* fid) {
     // first line: numfields
     if (sscanf(line, "NumFields=%i\n", &numfields) != 1) {
         fprintf(stderr, "parse error: numfields\n");
-        free(line);
+        smart_free(line);
         return -1;
     }
-    free(line);
+    smart_free(line);
     return numfields;
 }
 
@@ -66,7 +66,7 @@ dl* read_ls_file_field(FILE* fid, int dimension) {
     }
     if (sscanf(line, "%i%n", &npoints, &offset) < 1) {
         fprintf(stderr, "parse error: npoints\n");
-        free(line);
+        smart_free(line);
         return NULL;
     }
 
@@ -77,13 +77,13 @@ dl* read_ls_file_field(FILE* fid, int dimension) {
         if (sscanf(line+offset, ",%lf%n", &val, &inc) < 1) {
             fprintf(stderr, "parse error: point %i\n", i);
             dl_free(pointlist);
-            free(line);
+            smart_free(line);
             return NULL;
         }
         dl_append(pointlist, val);
         offset += inc;
     }
-    free(line);
+    smart_free(line);
     return pointlist;
 }
 

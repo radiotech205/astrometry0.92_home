@@ -31,7 +31,7 @@
 #include "ioutils.h"
 #include "fitsioutils.h"
 #include "bl.h"
-
+#include "memory.h"
 struct anwcslib_t {
     struct wcsprm* wcs;
     // Image width and height, in pixels.
@@ -611,7 +611,7 @@ void anwcs_free(anwcs_t* anwcs) {
     if (!anwcs)
         return;
     ANWCS_DISPATCH(anwcs, , , free);
-    free(anwcs);
+    smart_free(anwcs);
 }
 
 anbool anwcs_radec_is_inside_image(const anwcs_t* wcs, double ra, double dec) {
@@ -824,7 +824,8 @@ int anwcs_get_radec_center_and_radius(const anwcs_t* anwcs,
 
 anwcs_t* anwcs_new_sip(const sip_t* sip) {
     anwcs_t* anwcs;
-    anwcs = calloc(1, sizeof(anwcs_t));
+    anwcs = smart_calloc(1, sizeof(anwcs_t));
+    if(!anwcs)  return NULL;
     anwcs->type = ANWCS_TYPE_SIP;
     anwcs->data = sip_create();
     memcpy(anwcs->data, sip, sizeof(sip_t));
@@ -850,7 +851,7 @@ anwcs_t* anwcs_open(const char* filename, int ext) {
     } else {
         errmsg = errors_stop_logging_to_string("\n  ");
         logverb("Failed to open file %s, ext %i as SIP:\n%s\n", filename, ext, errmsg);
-        free(errmsg);
+        smart_free(errmsg);
     }
 
     // try as WCSLIB:
@@ -861,7 +862,7 @@ anwcs_t* anwcs_open(const char* filename, int ext) {
     } else {
         errmsg = errors_stop_logging_to_string(": ");
         logverb("Failed to open file %s, ext %i using WCSLIB: %s", filename, ext, errmsg);
-        free(errmsg);
+        smart_free(errmsg);
     }
 
     // try as WCStools:
@@ -872,7 +873,7 @@ anwcs_t* anwcs_open(const char* filename, int ext) {
     } else {
         errmsg = errors_stop_logging_to_string(": ");
         logverb("Failed to open file %s, ext %i using WCStools: %s", filename, ext, errmsg);
-        free(errmsg);
+        smart_free(errmsg);
     }
 
     return NULL;
@@ -892,8 +893,8 @@ static anwcs_t* open_tansip(const char* filename, int ext, anbool forcetan) {
         sip->ap_order = sip->bp_order = MAX(sip->a_order, sip->b_order) + 1;
         sip_compute_inverse_polynomials(sip, 0, 0, 0, 0, 0, 0);
     }
-
-    anwcs = calloc(1, sizeof(anwcs_t));
+    anwcs = smart_calloc(1, sizeof(anwcs_t));
+    if(!anwcs)  return NULL;
     anwcs->type = ANWCS_TYPE_SIP;
     anwcs->data = sip;
     return anwcs;
@@ -1639,7 +1640,7 @@ static anwcs_t* allsky_wcs(double refra, double refdec,
         return NULL;
     }
     anwcs = anwcs_wcslib_from_string(str, Nstr);
-    free(str);
+    smart_free(str);
     if (!anwcs) {
         ERROR("Failed to parse %s header string with wcslib", wcsname);
         return NULL;
@@ -1713,7 +1714,7 @@ anwcs_t* anwcs_create_cea_wcs(double refra, double refdec,
         return NULL;
     }
     anwcs = anwcs_wcslib_from_string(str, Nstr);
-    free(str);
+    smart_free(str);
     if (!anwcs) {
         ERROR("Failed to parse %s header string with wcslib", wcsname);
         return NULL;
@@ -1783,7 +1784,7 @@ anwcs_t* anwcs_create_galactic_car_wcs(double refra, double refdec,
         return NULL;
     }
     anwcs = anwcs_wcslib_from_string(str, Nstr);
-    free(str);
+    smart_free(str);
     if (!anwcs) {
         ERROR("Failed to parse %s header string with wcslib", wcsname);
         return NULL;
@@ -1831,7 +1832,7 @@ anwcs_t* anwcs_create_mercator_2(double refra, double refdec,
     }
 
     anwcs = anwcs_wcslib_from_string(str, Nstr);
-    free(str);
+    smart_free(str);
     if (!anwcs) {
         ERROR("Failed to parse Mercator header string with wcslib");
         return NULL;

@@ -12,14 +12,14 @@
 #include "qfits_header.h"
 #include "errors.h"
 #include "log.h"
-
+#include "memory.h"
 scamp_cat_t* scamp_catalog_open_for_writing(const char* filename, anbool ref) {
     scamp_cat_t* scamp;
-    scamp = calloc(1, sizeof(scamp_cat_t));
+    scamp = smart_calloc(1, sizeof(scamp_cat_t));
     scamp->table = fitstable_open_for_writing(filename);
     if (!scamp->table) {
         ERROR("Failed to open scamp catalog for writing");
-        free(scamp);
+        smart_free(scamp);
         return NULL;
     }
     scamp->ref = ref;
@@ -67,7 +67,7 @@ int scamp_catalog_write_field_header(scamp_cat_t* scamp, const qfits_header* hdr
     }
 
     // +1 because qfits_header_write_line adds a trailing '\0'.
-    hdrstring = malloc(N * FITS_LINESZ + 1);
+    hdrstring = smart_malloc(N * FITS_LINESZ + 1);
     for (i=0; i<N; i++)
         if (qfits_header_write_line(hdr, i, hdrstring + i * FITS_LINESZ)) {
             ERROR("Failed to get scamp catalog field header line %i", i);
@@ -79,7 +79,7 @@ int scamp_catalog_write_field_header(scamp_cat_t* scamp, const qfits_header* hdr
         ERROR("Failed to write scamp catalog field header");
         return -1;
     }
-    free(hdrstring);
+    smart_free(hdrstring);
 
     if (fitstable_pad_with(scamp->table, ' ') ||
         fitstable_fix_header(scamp->table)) {
@@ -150,7 +150,7 @@ int scamp_catalog_close(scamp_cat_t* scamp) {
         ERROR("Failed to close scamp catalog");
         return -1;
     }
-    free(scamp);
+    smart_free(scamp);
     return 0;
 }
 

@@ -11,7 +11,7 @@
 #include "starxy.h"
 #include "permutedsort.h"
 #include "mathutil.h"
-
+#include "memory.h"
 void starxy_set_xy_array(starxy_t* s, const double* xy) {
     int i,N;
     N = starxy_n(s);
@@ -130,25 +130,25 @@ int starxy_n(const starxy_t* f) {
 
 void starxy_free_data(starxy_t* f) {
     if (!f) return;
-    free(f->x);
-    free(f->y);
-    free(f->flux);
-    free(f->background);
+    smart_free(f->x);
+    smart_free(f->y);
+    smart_free(f->flux);
+    smart_free(f->background);
 }
 
 void starxy_free(starxy_t* f) {
     starxy_free_data(f);
-    free(f);
+    smart_free(f);
 }
 
 double* starxy_copy_x(const starxy_t* xy) {
-    double* res = malloc(sizeof(double) * (size_t)starxy_n(xy));
+    double* res = smart_malloc(sizeof(double) * (size_t)starxy_n(xy));
     memcpy(res, xy->x, sizeof(double) * (size_t)starxy_n(xy));
     return res;
 }
 
 double* starxy_copy_y(const starxy_t* xy) {
-    double* res = malloc(sizeof(double) * (size_t)starxy_n(xy));
+    double* res = smart_malloc(sizeof(double) * (size_t)starxy_n(xy));
     memcpy(res, xy->y, sizeof(double) * (size_t)starxy_n(xy));
     return res;
 }
@@ -157,7 +157,7 @@ double* starxy_copy_xy(const starxy_t* xy) {
     int i, N;
     double* res;
     N = starxy_n(xy);
-    res = malloc(sizeof(double) * 2 * N);
+    res = smart_malloc(sizeof(double) * 2 * N);
     for (i=0; i<N; i++) {
         res[2*i + 0] = starxy_getx(xy, i);
         res[2*i + 1] = starxy_gety(xy, i);
@@ -175,7 +175,7 @@ void starxy_sort_by_flux(starxy_t* s) {
         permutation_apply(perm, s->N, s->flux, s->flux, sizeof(double));
     if (s->background)
         permutation_apply(perm, s->N, s->background, s->background, sizeof(double));
-    free(perm);
+    smart_free(perm);
 }
 
 void starxy_set_x_array(starxy_t* s, const double* x) {
@@ -193,20 +193,20 @@ void starxy_set_bg_array(starxy_t* s, const double* f) {
 }
 
 starxy_t* starxy_new(int N, anbool flux, anbool back) {
-    starxy_t* xy = calloc(1, sizeof(starxy_t));
+    starxy_t* xy = smart_calloc(1, sizeof(starxy_t));
     starxy_alloc_data(xy, N, flux, back);
     return xy;
 }
 
 void starxy_alloc_data(starxy_t* f, int N, anbool flux, anbool back) {
-    f->x = malloc(N * sizeof(double));
-    f->y = malloc(N * sizeof(double));
+    f->x = smart_malloc(N * sizeof(double));
+    f->y = smart_malloc(N * sizeof(double));
     if (flux)
-        f->flux = malloc((size_t)N * sizeof(double));
+        f->flux = smart_malloc((size_t)N * sizeof(double));
     else
         f->flux = NULL;
     if (back)
-        f->background = malloc((size_t)N * sizeof(double));
+        f->background = smart_malloc((size_t)N * sizeof(double));
     else
         f->background = NULL;
     f->N = N;
@@ -221,7 +221,7 @@ double* starxy_to_flat_array(starxy_t* xy, double* arr) {
         nr++;
 
     if (!arr)
-        arr = malloc((size_t)nr * (size_t)starxy_n(xy) * sizeof(double));
+        arr = smart_malloc((size_t)nr * (size_t)starxy_n(xy) * sizeof(double));
 
     ind = 0;
     for (i=0; i<xy->N; i++) {
@@ -244,7 +244,7 @@ double* starxy_to_flat_array(starxy_t* xy, double* arr) {
 double* starxy_to_xy_array(starxy_t* xy, double* arr) {
     int i;
     if (!arr)
-        arr = malloc((size_t)2 * (size_t)starxy_n(xy) * sizeof(double));
+        arr = smart_malloc((size_t)2 * (size_t)starxy_n(xy) * sizeof(double));
     for (i=0; i<starxy_n(xy); i++) {
         arr[2*i]   = xy->x[i];
         arr[2*i+1] = xy->y[i];

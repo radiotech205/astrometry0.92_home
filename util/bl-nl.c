@@ -24,7 +24,7 @@
  */
 
 #include "bl-nl.ph"
-
+#include "memory.h"
 #define NODE_NUMDATA(node) ((number*)NODE_DATA(node))
 
 number* NLF(to_array)(nl* list) {
@@ -33,7 +33,8 @@ number* NLF(to_array)(nl* list) {
     if (!list)
         return NULL;
     N = NLF(size)(list);
-    arr = malloc(N * sizeof(number));
+    arr = smart_malloc(N * sizeof(number));
+    if(!arr)    return NULL;
     bl_copy(list, 0, N, arr);
     return arr;
 }

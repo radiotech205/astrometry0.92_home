@@ -10,7 +10,7 @@
 #include "mathutil.h"
 #include "errors.h"
 #include "log.h"
-
+#include "memory.h"
 struct quad {
     unsigned int star[DQMAX];
 };
@@ -136,14 +136,14 @@ static void add_interior_stars(quadbuilder_t* qb,
 }
 
 quadbuilder_t* quadbuilder_init() {
-    quadbuilder_t* qb = calloc(1, sizeof(quadbuilder_t));
+    quadbuilder_t* qb = smart_calloc(1, sizeof(quadbuilder_t));
     return qb;
 }
 
 void quadbuilder_free(quadbuilder_t* qb) {
-    free(qb->inbox);
-    free(qb->pquads);
-    free(qb);
+    smart_free(qb->inbox);
+    smart_free(qb->pquads);
+    smart_free(qb);
 }
 
 int quadbuilder_create(quadbuilder_t* qb) {
@@ -158,11 +158,11 @@ int quadbuilder_create(quadbuilder_t* qb) {
     if (qb->Nstars > qb->Ncq) {
         // (free and malloc rather than realloc because we don't care about
         //  the previous contents)
-        free(qb->inbox);
-        free(qb->pquads);
+        smart_free(qb->inbox);
+        smart_free(qb->pquads);
         qb->Ncq = qb->Nstars;
-        qb->inbox =  calloc(qb->Nstars, sizeof(int));
-        qb->pquads = calloc((size_t)qb->Nstars * (size_t)qb->Nstars, sizeof(pquad_t));
+        qb->inbox =  smart_calloc(qb->Nstars, sizeof(int));
+        qb->pquads = smart_calloc((size_t)qb->Nstars * (size_t)qb->Nstars, sizeof(pquad_t));
         if (!qb->inbox || !qb->pquads) {
             ERROR("quad-builder: failed to malloc qb->inbox or qb->pquads.  Nstars=%i.\n", qb->Nstars);
             return -1;
@@ -238,7 +238,7 @@ int quadbuilder_create(quadbuilder_t* qb) {
             if (qb->stop_creating)
                 goto theend;
 
-            pq->inbox = malloc(qb->Nstars * sizeof(int));
+            pq->inbox = smart_malloc(qb->Nstars * sizeof(int));
             if (!pq->inbox) {
                 ERROR("hpquads: failed to malloc pq->inbox.\n");
                 exit(-1);
@@ -285,7 +285,7 @@ int quadbuilder_create(quadbuilder_t* qb) {
         int lim = (i == newpoint) ? iA : i;
         for (j=0; j<lim; j++) {
             pquad_t* pq = qb_pquads + j*qb->Nstars + i;
-            free(pq->inbox);
+            smart_free(pq->inbox);
             pq->inbox = NULL;
         }
     }

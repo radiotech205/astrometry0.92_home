@@ -15,7 +15,7 @@
 
 #include "bl.ph"
 #include "log.h"
-
+#include "memory.h"
 static bl_node* bl_new_node(bl* list);
 static void bl_remove_from_node(bl* list, bl_node* node,
                                 bl_node* prev, int index_in_node);
@@ -150,7 +150,7 @@ void bl_init(bl* list, int blocksize, int datasize) {
 
 bl* bl_new(int blocksize, int datasize) {
     bl* rtn;
-    rtn = malloc(sizeof(bl));
+    rtn = smart_malloc(sizeof(bl));
     if (!rtn) {
         printf("Couldn't allocate memory for a bl.\n");
         return NULL;
@@ -162,7 +162,7 @@ bl* bl_new(int blocksize, int datasize) {
 void bl_free(bl* list) {
     if (!list) return;
     bl_remove_all(list);
-    free(list);
+    smart_free(list);
 }
 
 void bl_remove_all(bl* list) {
@@ -391,7 +391,7 @@ void bl_append_list(bl* list1, bl* list2) {
 static bl_node* bl_new_node(bl* list) {
     bl_node* rtn;
     // merge the mallocs for the node and its data into one malloc.
-    rtn = malloc(sizeof(bl_node) + (size_t)list->datasize * (size_t)list->blocksize);
+    rtn = smart_malloc(sizeof(bl_node) + (size_t)list->datasize * (size_t)list->blocksize);
     if (!rtn) {
         printf("Couldn't allocate memory for a bl node!\n");
         return NULL;
@@ -857,7 +857,7 @@ int bl_compare_pointers_ascending(const void* v1, const void* v2) {
 void  pl_free_elements(pl* list) {
     size_t i;
     for (i=0; i<pl_size(list); i++) {
-        free(pl_get(list, i));
+        smart_free(pl_get(list, i));
     }
 }
 
@@ -925,7 +925,7 @@ void sl_free2(sl* list) {
     size_t i;
     if (!list) return;
     for (i=0; i<sl_size(list); i++)
-        free(sl_get(list, i));
+        smart_free(sl_get(list, i));
     bl_free(list);
 }
 
@@ -997,7 +997,7 @@ void sl_reverse(sl* list) {
 char* sl_append(sl* list, const char* data) {
     char* copy;
     if (data) {
-        copy = strdup(data);
+        copy = smart_strdup(data);
         assert(copy);
     } else
         copy = NULL;
@@ -1016,7 +1016,7 @@ void sl_append_nocopy(sl* list, const char* data) {
 }
 
 char* sl_push(sl* list, const char* data) {
-    char* copy = strdup(data);
+    char* copy = smart_strdup(data);
     pl_push(list, copy);
     return copy;
 }
@@ -1036,10 +1036,10 @@ char* sl_get_const(const sl* list, size_t n) {
 char* sl_set(sl* list, size_t index, const char* value) {
     char* copy;
     assert(index >= 0);
-    copy = strdup(value);
+    copy = smart_strdup(value);
     if (index < list->N) {
         // we're replacing an existing value - free it!
-        free(sl_get(list, index));
+        smart_free(sl_get(list, index));
         bl_set(list, index, &copy);
     } else {
         // pad
@@ -1056,7 +1056,7 @@ int sl_check_consistency(sl* list) {
 }
 
 char* sl_insert(sl* list, size_t indx, const char* data) {
-    char* copy = strdup(data);
+    char* copy = smart_strdup(data);
     bl_insert(list, indx, &copy);
     return copy;
 }
@@ -1108,7 +1108,7 @@ void sl_remove_index_range(sl* list, size_t start, size_t length) {
     assert(length >= 0);
     for (i=0; i<length; i++) {
         char* str = sl_get(list, start + i);
-        free(str);
+        smart_free(str);
     }
     bl_remove_index_range(list, start, length);
 }
@@ -1121,7 +1121,7 @@ void  sl_remove_all(sl* list) {
     size_t i;
     if (!list) return;
     for (i=0; i<sl_size(list); i++)
-        free(pl_get(list, i));
+        smart_free(pl_get(list, i));
     bl_remove_all(list);
 }
 
@@ -1150,7 +1150,7 @@ static char* sljoin(sl* list, const char* join, int forward) {
     size_t JL;
 
     if (sl_size(list) == 0)
-        return strdup("");
+        return smart_strdup("");
 
     // step through the list forward or backward?
     if (forward) {
@@ -1168,7 +1168,7 @@ static char* sljoin(sl* list, const char* join, int forward) {
     for (i=0; i<N; i++)
         len += strlen(sl_get(list, i));
     len += ((N-1) * JL);
-    rtn = malloc(len + 1);
+    rtn = smart_malloc(len + 1);
     if (!rtn)
         return rtn;
     offset = 0;
@@ -1210,7 +1210,7 @@ char* sl_appendf(sl* list, const char* format, ...) {
 
 char* sl_appendvf(sl* list, const char* format, va_list va) {
     char* str;
-    if (vasprintf(&str, format, va) == -1)
+    if (smart_asprintf(&str, format, va) == -1)
         return NULL;
     sl_append_nocopy(list, str);
     return str;
@@ -1220,7 +1220,7 @@ char* sl_insert_sortedf(sl* list, const char* format, ...) {
     va_list lst;
     char* str;
     va_start(lst, format);
-    if (vasprintf(&str, format, lst) == -1)
+    if (smart_asprintf(&str, format, lst) == -1)
         return NULL;
     sl_insert_sorted_nocopy(list, str);
     va_end(lst);
@@ -1231,7 +1231,7 @@ char* sl_insertf(sl* list, size_t index, const char* format, ...) {
     va_list lst;
     char* str;
     va_start(lst, format);
-    if (vasprintf(&str, format, lst) == -1)
+    if (smart_asprintf(&str, format, lst) == -1)
         return NULL;
     sl_insert_nocopy(list, index, str);
     va_end(lst);
@@ -1249,7 +1249,7 @@ void sl_insert_sorted_nocopy(sl* list, const char* string) {
 }
 
 char* sl_insert_sorted(sl* list, const char* string) {
-    char* copy = strdup(string);
+    char* copy = smart_strdup(string);
     pl_insert_sorted(list, copy, bl_compare_strings_ascending);
     return copy;
 }

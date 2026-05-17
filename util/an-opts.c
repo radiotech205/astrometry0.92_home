@@ -12,7 +12,7 @@
 #include "ioutils.h"
 #include "bl.h"
 #include "log.h"
-
+#include "memory.h"
 void opts_print_help(bl* opts, FILE* fid,
                      void (*special_case)(an_option_t* opt, bl* allopts, int index,
                                           FILE* fid, void* extra), void* extra) {
@@ -49,10 +49,10 @@ int opts_getopt(bl* opts, int argc, char** argv) {
     char* optstring;
     int c;
     struct option* longoptions;
-
     N = bl_size(opts);
     // create the short options string.
-    optstring = malloc(3 * N + 1);
+    optstring = smart_malloc(3 * N + 1);
+    if(!optstring)  return 0;
     j = 0;
     for (i=0; i<N; i++) {
         an_option_t* opt = bl_access(opts, i);
@@ -73,7 +73,8 @@ int opts_getopt(bl* opts, int argc, char** argv) {
     }
     optstring[j] = '\0';
     // create long options.
-    longoptions = calloc(N+1, sizeof(struct option));
+    longoptions = smart_calloc(N+1, sizeof(struct option));
+    if(!longoptions)    return 0;
     j = 0;
     for (i=0; i<N; i++) {
         an_option_t* opt = bl_access(opts, i);
@@ -92,8 +93,8 @@ int opts_getopt(bl* opts, int argc, char** argv) {
 
     c = getopt_long(argc, argv, optstring, longoptions, NULL);
 
-    free(optstring);
-    free(longoptions);
+    smart_free(optstring);
+    smart_free(longoptions);
 
     return c;
 }

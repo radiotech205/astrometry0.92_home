@@ -19,7 +19,7 @@
 #undef InlineDefine
 
 #include "bl.h"
-
+#include "memory.h"
 /**
  Returns 1 if the given point is inside the given polygon
  (listed as x0,y0, x1,y1, etc).
@@ -92,7 +92,7 @@ float* average_weighted_image_f(const float* image, const float* weight,
     if (get_output_image_size(W, H, S, edgehandling, &outw, &outh))
         return NULL;
     if (output == NULL) {
-        output = malloc((size_t)outw * (size_t)outh * sizeof(float));
+        output = smart_malloc((size_t)outw * (size_t)outh * sizeof(float));
         if (!output) {
             SYSERROR("Failed to allocate %i x %i floats", outw, outh);
             return NULL;
@@ -380,7 +380,7 @@ void fit_transform(double* star, double* field, int N, double* trans) {
     double* F;
 
     // build F = (field; ones)
-    F = malloc(3 * N * sizeof(double));
+    F = smart_malloc(3 * N * sizeof(double));
     for (c=0; c<N; c++) {
         // row 0
         F[0 + c*3] = field[0 + c*2];
@@ -414,7 +414,7 @@ void fit_transform(double* star, double* field, int N, double* trans) {
         return;
     }
 
-    R = malloc(N * 3 * sizeof(double));
+    R = smart_malloc(N * 3 * sizeof(double));
 
     // compute   R   =   F'  *  FFt  = F' inv(F F')
     //         (Nx3) = (Nx3) * (3x3)
@@ -442,7 +442,7 @@ void fit_transform(double* star, double* field, int N, double* trans) {
             trans[c + r*3] = acc;
         }
 
-    free(F);
-    free(R);
+    smart_free(F);
+    smart_free(R);
 }
 

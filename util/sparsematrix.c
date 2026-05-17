@@ -9,7 +9,7 @@
 #include "os-features.h"
 #include "sparsematrix.h"
 #include "mathutil.h"
-
+#include "memory.h"
 struct entry {
     int c;
     double val;
@@ -67,10 +67,10 @@ int compare_entries(const void* v1, const void* v2) {
 
 sparsematrix_t* sparsematrix_new(int R, int C) {
     int i;
-    sparsematrix_t* sp = calloc(1, sizeof(sparsematrix_t));
+    sparsematrix_t* sp = smart_calloc(1, sizeof(sparsematrix_t));
     sp->R = R;
     sp->C = C;
-    sp->rows = calloc(R, sizeof(bl));
+    sp->rows = smart_calloc(R, sizeof(bl));
     for (i=0; i<R; i++)
         bl_init(sp->rows + i, 16, sizeof(entry_t));
     return sp;
@@ -81,8 +81,8 @@ void sparsematrix_free(sparsematrix_t* sp) {
     if (!sp) return;
     for (i=0; i<sp->R; i++)
         bl_remove_all(sp->rows + i);
-    free(sp->rows);
-    free(sp);
+    smart_free(sp->rows);
+    smart_free(sp);
 }
 
 void sparsematrix_set(sparsematrix_t* sp, int r, int c, double val) {
@@ -170,10 +170,10 @@ void sparsematrix_subset_rows(sparsematrix_t* sp, const int* rows, int NR) {
     bl* newrows;
     int i;
     assert(NR <= sp->R);
-    newrows = malloc(NR * sizeof(bl));
+    newrows = smart_malloc(NR * sizeof(bl));
     for (i=0; i<NR; i++)
         newrows[i] = sp->rows[rows[i]];
-    free(sp->rows);
+    smart_free(sp->rows);
     sp->rows = newrows;
     sp->R = NR;
 }

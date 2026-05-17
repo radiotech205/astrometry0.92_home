@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 #include "bt.h"
-
+#include "memory.h"
 /*
  The AVL tree portion of this code was adapted from GNU libavl.
  */
@@ -118,7 +118,7 @@ int bt_check(bt* tree) {
 }
 
 bt* bt_new(int datasize, int blocksize) {
-    bt* tree = calloc(1, sizeof(bt));
+    bt* tree = smart_calloc(1, sizeof(bt));
     if (!tree) {
         fprintf(stderr, "Failed to allocate a new bt struct: %s\n", strerror(errno));
         return NULL;
@@ -163,13 +163,13 @@ static void bt_free_node(bt_node* node) {
         bt_free_node(getleftchild(node));
         bt_free_node(getrightchild(node));
     }
-    free(node);
+    smart_free(node);
 }
 
 void bt_free(bt* tree) {
     if (tree->root)
         bt_free_node(tree->root);
-    free(tree);
+    smart_free(tree);
 }
 
 static Pure void* get_element(bt* tree, bt_leaf* leaf, int index) {
@@ -182,7 +182,7 @@ static Pure void* first_element(bt_node* n) {
 }
 
 static Malloc bt_node* bt_new_branch(bt* tree) {
-    bt_node* n = calloc(1, sizeof(bt_node));
+    bt_node* n = smart_calloc(1, sizeof(bt_node));
     if (!n) {
         fprintf(stderr, "Failed to allocate a new bt_node: %s\n", strerror(errno));
         return NULL;
@@ -191,7 +191,7 @@ static Malloc bt_node* bt_new_branch(bt* tree) {
 }
 
 static Malloc bt_node* bt_new_leaf(bt* tree) {
-    bt_node* n = malloc(sizeof(bt_leaf) + (size_t)tree->datasize * (size_t)tree->blocksize);
+    bt_node* n = smart_malloc(sizeof(bt_leaf) + (size_t)tree->datasize * (size_t)tree->blocksize);
     if (!n) {
         fprintf(stderr, "Failed to allocate a new bt_node: %s\n", strerror(errno));
         return NULL;
@@ -454,7 +454,7 @@ anbool bt_insert2(bt* tree, void* data, anbool unique, compare_func_2 compare, v
         return FALSE;
     rtn = bt_leaf_insert(tree, &n->leaf, data, unique, compare, token, NULL);
     if (!rtn) {
-        free(n);
+        smart_free(n);
         return FALSE;
     }
 
@@ -687,13 +687,14 @@ static void bt_print_node(bt* tree, bt_node* node, char* indent,
                node_N(node->branch.children[0]),
                node_N(node->branch.children[1]),
                node->branch.balance);
-        subind = malloc(strlen(indent) + strlen(addind) + 1);
+        subind = smart_malloc(strlen(indent) + strlen(addind) + 1);
+        if(!subind) return;
         sprintf(subind, "%s%s", indent, addind);
         printf("%sLeft child:\n", indent);
         bt_print_node(tree, node->branch.children[0], subind, print_element);
         printf("%sRight child:\n", indent);
         bt_print_node(tree, node->branch.children[1], subind, print_element);
-        free(subind);
+        smart_free(subind);
     } else {
         int i;
         printf(".  Leaf.");
@@ -725,7 +726,8 @@ static void bt_print_struct_node(bt* tree, bt_node* node, char* indent,
         char* subind;
         char* addind = "|--";
         printf("(bal %i)\n", node->branch.balance);
-        subind = malloc(strlen(indent) + strlen(addind) + 1);
+        subind = smart_malloc(strlen(indent) + strlen(addind) + 1);
+        if(!subind) return;
         sprintf(subind, "%s%s", indent, addind);
         bt_print_struct_node(tree, node->branch.children[0], subind, print_element);
         bt_print_struct_node(tree, node->branch.children[1], subind, print_element);

@@ -15,7 +15,7 @@
 #include "keywords.h"
 #include "errors.h"
 #include "mathutil.h"
-
+#include "memory.h"
 #define KDTREE_MAX_RESULTS 1000
 #define KDTREE_MAX_DIM 100
 
@@ -489,11 +489,16 @@ anbool resize_results(kdtree_qres_t* res, int newsize, int D,
         print_results(res, D);
     }
 
-    if (do_dists)
+    if (do_dists) {
         res->sdists  = REALLOC(res->sdists , newsize * sizeof(double));
-    if (do_points)
+        if(!res->sdists)    return FALSE;
+    }
+    if (do_points) {
         res->results.any = REALLOC(res->results.any, (size_t)newsize * (size_t)D * sizeof(etype));
+        if(!res->results.any)   return FALSE;
+    }
     res->inds = REALLOC(res->inds, newsize * sizeof(u32));
+    if(!res->inds)   return FALSE;
     if (newsize && (!res->results.any || (do_dists && !res->sdists) || !res->inds))
         SYSERROR("Failed to resize kdtree results arrays");
     res->capacity = newsize;
@@ -1168,7 +1173,10 @@ kdtree_qres_t* MANGLE(kdtree_rangesearch_options)
         }
         res->nres = 0;
     } else {
-        res = CALLOC(1, sizeof(kdtree_qres_t));
+        //res = CALLOC(1, sizeof(kdtree_qres_t));
+        res = smart_malloc(sizeof(kdtree_qres_t));
+        if(!res)    return NULL;
+        memset(res, 0, sizeof(kdtree_qres_t));
         if (!res) {
             SYSERROR("Failed to allocate kdtree_qres_t struct");
             return NULL;
@@ -2213,8 +2221,8 @@ kdtree_t* MANGLE(kdtree_build_2)
     if (needs_data_conversion()) {
         // compute scaling params
         if (!kd->minval || !kd->maxval) {
-            free(kd->minval);
-            free(kd->maxval);
+            smart_free(kd->minval);
+            smart_free(kd->maxval);
             kd->minval = MALLOC(D * sizeof(double));
             kd->maxval = MALLOC(D * sizeof(double));
             assert(kd->minval);

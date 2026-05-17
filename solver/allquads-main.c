@@ -272,11 +272,11 @@ int main_allquads(int argc, char** argv) {
 
     printf("Done.\n");
 
-    free(ckdtfn);
-    free(skdt2fn);
-    free(quad2fn);
-    free(ckdt2fn);
-    free(quad3fn);
+    smart_free(ckdtfn);
+    smart_free(skdt2fn);
+    smart_free(quad2fn);
+    smart_free(ckdt2fn);
+    smart_free(quad3fn);
 
     return 0;
 }

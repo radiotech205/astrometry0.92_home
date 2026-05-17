@@ -15,7 +15,7 @@
 #include "fitsioutils.h"
 #include "an-bool.h"
 #include "keywords.h"
-
+#include "memory.h"
 static anbool is_writing(xylist_t* ls) {
     return (ls->table && ls->table->fid) ? TRUE : FALSE;
 }
@@ -105,7 +105,7 @@ anbool xylist_is_file_xylist(const char* fn, int ext,
 }
 
 static xylist_t* xylist_new() {
-    xylist_t* xy = calloc(1, sizeof(xylist_t));
+    xylist_t* xy = smart_calloc(1, sizeof(xylist_t));
     xy->xname = "X";
     xy->yname = "Y";
     xy->xtype = TFITS_BIN_TYPE_D;
@@ -124,7 +124,7 @@ xylist_t* xylist_open(const char* fn) {
     ls->table = fitstable_open_mixed(fn);
     if (!ls->table) {
         ERROR("Failed to open FITS table %s", fn);
-        free(ls);
+        smart_free(ls);
         return NULL;
     }
     ls->table->extension = 1;
@@ -150,7 +150,7 @@ xylist_t* xylist_open_for_writing(const char* fn) {
     ls->table = fitstable_open_for_writing(fn);
     if (!ls->table) {
         ERROR("Failed to open FITS table for writing");
-        free(ls);
+        smart_free(ls);
         return NULL;
     }
     // since we have to call xylist_next_field() before writing the first one...
@@ -193,14 +193,14 @@ sl* xylist_get_tagalong_column_names(xylist_t* ls, sl* lst) {
     lst = fitstable_get_fits_column_names(ls->table, lst);
     x = sl_remove_string_bycaseval(lst, ls->xname);
     y = sl_remove_string_bycaseval(lst, ls->yname);
-    free(x);
-    free(y);
+    smart_free(x);
+    smart_free(y);
     return lst;
 }
 
 void xylist_set_antype(xylist_t* ls, const char* type) {
-    free(ls->antype);
-    ls->antype = strdup(type);
+    smart_free(ls->antype);
+    ls->antype = smart_strdup(type);
 }
 
 int xylist_close(xylist_t* ls) {
@@ -211,8 +211,8 @@ int xylist_close(xylist_t* ls) {
             rtn = -1;
         }
     }
-    free(ls->antype);
-    free(ls);
+    smart_free(ls->antype);
+    smart_free(ls);
     return rtn;
 }
 
@@ -290,7 +290,7 @@ starxy_t* xylist_read_field(xylist_t* ls, starxy_t* fld) {
     }
 
     if (!fld) {
-        fld = calloc(1, sizeof(starxy_t));
+        fld = smart_calloc(1, sizeof(starxy_t));
         freeit = TRUE;
     }
 
@@ -307,12 +307,12 @@ starxy_t* xylist_read_field(xylist_t* ls, starxy_t* fld) {
         fld->background = NULL;
 
     if (!(fld->x && fld->y)) {
-        free(fld->x);
-        free(fld->y);
-        free(fld->flux);
-        free(fld->background);
+        smart_free(fld->x);
+        smart_free(fld->y);
+        smart_free(fld->flux);
+        smart_free(fld->background);
         if (freeit)
-            free(fld);
+            smart_free(fld);
         return NULL;
     }
     return fld;

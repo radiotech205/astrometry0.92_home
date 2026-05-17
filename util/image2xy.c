@@ -19,11 +19,11 @@
 #include "errors.h"
 #include "log.h"
 #include "mathutil.h"
-
+#include "memory.h"
 static float* upconvert(unsigned char* u8,
                         int nx, int ny) {
     int i;
-    float* f = malloc((size_t)nx * (size_t)ny * sizeof(float));
+    float* f = smart_malloc((size_t)nx * (size_t)ny * sizeof(float));
     if (!f) {
         SYSERROR("Failed to allocate image array to upconvert u8 image to floating-point.");
         return NULL;
@@ -109,7 +109,7 @@ int image2xy_run(simplexy_t* s,
     rtn = 0;
  bailout:
     if (free_fimage) {
-        free(s->image);
+        smart_free(s->image);
         s->image = NULL;
     }
     return rtn;

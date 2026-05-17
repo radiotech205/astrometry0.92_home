@@ -10,7 +10,7 @@
 
 #include "ioutils.h"
 #include "qidxfile.h"
-
+#include "memory.h"
 #define OPTIONS_quadsperstar "h"
 
 
@@ -24,7 +24,8 @@ void print_help_quadsperstar(char* progname)
 static Inline void ensure_hist_size(unsigned int** hist, unsigned int* size, unsigned int newsize) {
     if (newsize <= *size)
         return;
-    *hist = realloc(*hist, newsize*sizeof(unsigned int));
+    *hist = smart_realloc(*hist, newsize*sizeof(unsigned int));
+    if(!*hist)  return;
     memset((*hist) + (*size), 0, (newsize - *size) * sizeof(unsigned int));
     *size = newsize;
 }
@@ -68,7 +69,7 @@ int main_quadsperstar(int argc, char** args) {
 
         fprintf(stderr, "Reading %i stars from %s...\n", qf->numstars, fn);
         fflush(stderr);
-        free(fn);
+        smart_free(fn);
 
         for (i=0; i<qf->numstars; i++) {
             qidxfile_get_quads(qf, i, &quads, &nquads);
@@ -87,7 +88,7 @@ int main_quadsperstar(int argc, char** args) {
         for (i=0; i<Nhist; i++)
             sumhist[i] += hist[i];
 
-        free(hist);
+        smart_free(hist);
     }
 
     printf("sum = [ ");
